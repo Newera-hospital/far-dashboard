@@ -4038,7 +4038,7 @@ function reportPastLife(assets) {
 
 window.onReportFyChange = function (val) {
   REPORT_FY = val === '' ? null : Number(val);
-  renderReports();
+  window.renderReports?.();
 };
 
 window.printReportSummary = function () {
@@ -4075,7 +4075,7 @@ window.printReportSummary = function () {
       .sign{margin-top:36pt;display:flex;justify-content:space-between;font-size:10pt;}
       .sign div{border-top:.6pt solid #000;padding-top:6pt;width:30%;text-align:center;}
       footer{margin-top:20pt;font-size:8pt;color:#888;text-align:center;}
-    </style></head><body>
+    <\/style><\/head><body>
     <h1>New Era Hospital  Fixed Asset Register Summary</h1>
     <div class="meta">Period: <strong>${period}</strong> &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})} &nbsp;|&nbsp; Unit: ${gsEscape(U.cid || DEFAULT_ENTITY_CODE || '-')}</div>
     <h2>Register snapshot (all-time)</h2>
@@ -4104,7 +4104,7 @@ window.printReportSummary = function () {
       <div>Approved by</div>
     </div>
     <footer>NEH FAR  Confidential. Auto-generated. Verify against source data before any external use.</footer>
-    </body></html>`;
+    <\/body><\/html>`;
   const w = window.open('', '_blank', 'noopener');
   if (!w) { toast('Pop-up blocked  allow pop-ups for this site to print summary', 'er'); return; }
   w.document.open(); w.document.write(printable); w.document.close();
@@ -4291,10 +4291,10 @@ window.go = (key) => {
   document.querySelectorAll('.nav').forEach(n=>n.classList.remove('on'));
   const sec = document.getElementById(SEC_MAP[key]); if(sec) sec.classList.add('on');
   document.querySelectorAll('.nav').forEach(n => { if(n.getAttribute('onclick')?.includes(`'${key}'`)) n.classList.add('on'); });
-  if (window.innerWidth < 768) closeMob();
+  if (window.innerWidth < 768) window.closeMob?.();
   if (key === 'audit') { populateAuditUserFilter(); renderAudit(STATE.audit); }
   if (key === 'scan-settings') renderScanSettings();
-  if (key === 'reports') renderReports();
+  if (key === 'reports') window.renderReports?.();
   if (!suppressNextNavPush) {
     history.pushState({ FARSection:key }, '', `${location.pathname}${location.search}#${key}`);
   }
@@ -4320,7 +4320,6 @@ function initHistoryGuard() {
     window.go(key);
   });
 }
-initHistoryGuard();
 
 //  SIDEBAR 
 window.toggleSidebar = () => {
@@ -4339,6 +4338,7 @@ window.closeMob = () => {
   document.getElementById('sidebar').classList.remove('mob-open');
   document.getElementById('overlay').classList.remove('on');
 };
+initHistoryGuard();
 
 //  AVATAR 
 window.toggleDD = () => document.getElementById('avatarDD').classList.toggle('open');
@@ -4367,20 +4367,20 @@ window.closeMo = (id) => {
     history.back();
   }
 };
-window.closeMoOuter = (e, id) => { if (e.target === document.getElementById(id)) closeMo(id); };
+window.closeMoOuter = (e, id) => { if (e.target === document.getElementById(id)) window.closeMo?.(id); };
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     // Guide overlay closes first if open  it sits above everything.
     const guide = document.getElementById('guideMo');
-    if (guide?.classList.contains('on')) { closeGuide(); return; }
+    if (guide?.classList.contains('on')) { window.closeGuide?.(); return; }
     // Prefer closeMo() so the matching history entry is unwound.
     const openModals = document.querySelectorAll('.mo.on');
     if (openModals.length) {
-      openModals.forEach(m => closeMo(m.id));
+      openModals.forEach(m => window.closeMo?.(m.id));
       return;
     }
     document.getElementById('avatarDD')?.classList.remove('open');
-    closeMob();
+    window.closeMob?.();
     return;
   }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -4394,16 +4394,16 @@ document.addEventListener('keydown', e => {
   if (active && ['TEXTAREA','BUTTON','A'].includes(active.tagName)) return;
   if (document.getElementById('mo-qr')?.classList.contains('on')) {
     e.preventDefault();
-    confirmGenerateQR();
+    window.confirmQr?.();
   } else if (document.getElementById('mo-rp')?.classList.contains('on')) {
     e.preventDefault();
-    submitReprint();
+    window.submitReprint?.();
   } else if (document.getElementById('mo-disp')?.classList.contains('on')) {
     e.preventDefault();
-    submitDisposal();
+    window.submitDisposal?.();
   } else if (document.getElementById('mo-maint')?.classList.contains('on')) {
     e.preventDefault();
-    submitMaintenance();
+    window.submitMaint?.();
   }
 });
 
@@ -4435,7 +4435,7 @@ window.closeGuide = () => {
   try { localStorage.setItem(GUIDE_SEEN_KEY, String(Date.now())); } catch {}
 };
 window.closeGuideOuter = (e) => {
-  if (e.target === document.getElementById('guideMo')) closeGuide();
+  if (e.target === document.getElementById('guideMo')) window.closeGuide?.();
 };
 
 //  GLOBAL SEARCH  (top-bar instant lookup across all assets)
@@ -4477,10 +4477,10 @@ window.gsPick = (i) => {
   document.getElementById('globalSearchResults').classList.remove('on');
   GS_SEL = -1;
   inp.blur();
-  if (a.id && typeof viewAssetProfile === 'function') {
-    viewAssetProfile(a.id);
+  if (a.id && typeof window.viewAssetProfile === 'function') {
+    window.viewAssetProfile(a.id);
   } else {
-    go('assets');
+    window.go('assets');
   }
 };
 function gsHide() {
