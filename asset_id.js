@@ -4,8 +4,13 @@
  * is unique within its unit+location series, monotonic, immutable, and mirrored
  * back to the Google Sheet via the write-queue.
  *
- * Format:  NEH-{UNIT_CODE}-{LOCATION_CODE}-{3-digit zero-padded sequence}
- * Example: NEH-U1-ICU-001
+ * Format:  NEH-{UNIT_CODE}-{LOCATION_CODE}-{4-digit zero-padded sequence}
+ * Example: NEH-U1-ICU-0001
+ *
+ * Sequence is 4 digits (max 9999 per location). If you ever cross 9999 in a
+ * single location, bump SEQ_DIGITS  the format will widen but uniqueness is
+ * preserved. Old 3-digit IDs from earlier deployments coexist fine; ordering
+ * via natural sort treats them correctly.
  *
  * Each location has its own independent counter:
  *   entities/{eid}/counters/seq_LOC_ICU
@@ -33,7 +38,7 @@ import { runTransaction, doc, serverTimestamp } from
 import { db, auth } from "./firebase-config.js";
 import { postSheetJob } from "./sheets.js";
 
-const SEQ_DIGITS = 3;
+const SEQ_DIGITS = 4;
 const pad = (n) => String(n).padStart(SEQ_DIGITS, "0");
 const MAX_COLLISION_SCAN = 200;
 

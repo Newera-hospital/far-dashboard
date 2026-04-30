@@ -392,3 +392,172 @@ Do not change `Content-Type` in `sheets.js` from `text/plain`. Apps Script Web A
 - Do not use Google auto-login without the 15-minute/session logic.
 - Do not make the public scan page show fields that admin has hidden.
 - Do not edit `firestore.rules` without publishing the same rules in Firebase Console.
+
+---
+
+## 14. Hardening additions (2026-04-28)
+
+This pass added a set of small safety, reporting, and UX improvements. None
+required Firestore rule changes — all were code-only or documentation.
+
+### Code changes shipped
+| Item | Where | What |
+|---|---|---|
+| **A1** Asset ID sequence width | `asset_id.js` | `SEQ_DIGITS` bumped from 3 to 4 (e.g. `NEH-U1-ICU-0001`). Old 3-digit IDs coexist; the counter naturally pads to 4 going forward. |
+| **A2** Re-push Asset IDs to Sheet | `dashboard.html` (Sync section) | New "Re-push Asset IDs" button walks Firestore-known assets and re-fires `cell_update` jobs for column Q. Idempotent. Throttled at 250ms/job to stay under Apps Script quota. |
+| **B1** Email link cross-device | `index.html` | Sign-in link now embeds `?e=<email>` so opening the link on a different device skips the email-confirmation prompt. |
+| **B2 + B3** Invite expiry + resend | `admin.html` | New invites carry `expiresAt` (+30 days). Users tab shows "Pending — expires in Xd" / "Expired Yd ago". A **Resend Invite** action refreshes the expiry. Audited as `Invite Resent`. |
+| **B4** Audit quick filters | `dashboard.html` | Audit section now has Range (24h / 7d / 30d / 90d) and per-User dropdowns alongside the existing search + action filters. |
+| **B6** CSV numeric exports | `dashboard.html` (`exportReport`) | Full Register and Additions CSV exports now write `Purchase Value` and `Useful Life` as plain numbers so Excel auto-totals work. |
+| **B7** Last-sync pill | `dashboard.html` topbar | Shows "Synced 2 min ago" with green pulse when fresh, amber when >30 min stale. Updates every 30s. |
+| **C1** Print preview page-breaks | `dashboard.html` Print Center | Preview now inserts "End of page N / Page N+1 of M" dividers every (24/12/6) labels for Small/Medium/Large sizes, so operators see how many A4 sheets they're about to print. |
+| **C2** Print history per asset | `dashboard.html` asset profile | New "Print & Label History" card on the asset profile, derived from the audit log (filtered to QR/Reprint events). |
+| **D1** Fiscal year filter | `dashboard.html` Reports | Reports section gains a year selector (auto-populated from data; April-start FY). Filters Additions and Disposals tables. Default = All time. |
+| **D2** Additions report | `dashboard.html` Reports | New table: assets added in selected FY with put-to-use date and value totals. CSV export. |
+| **D3** Ageing report | `dashboard.html` Reports | New table: pending allocations bucketed by age (fresh / 7d / 14d / 30d / stale). Helps nag finance/custodians. CSV export. |
+| **D4** Printable summary | `dashboard.html` Reports | "Print Summary" button opens a print-ready A4 page with KPIs, FY activity, dept breakdown, and a sign-off block. |
+| **E3** Past-useful-life report | `dashboard.html` Reports | Computes expiry as `put_to_use + useful_life_years` and lists assets past that date. CSV export. |
+| **F1** Idle session expiry | already present | `startInactivityWatch()` runs every 30s and force-signs-out at 15 min idle. Verified, no change. |
+| **F2** Apps Script shared secret | `firebase-config.js` + `sheets.js` + `setup_sheet.gs` | `postSheetJob()` now injects `secret` from `APPS_SCRIPT_SECRET` into every payload. The Apps Script `doPost(e)` rejects requests whose `secret` doesn't match the in-script `SHARED_SECRET` constant. **You must redeploy the Apps Script** for this to take effect (see below). |
+| **G1** Build version | all 4 HTML files + dashboard avatar dropdown | `<meta name="far-build">` per page; dashboard shows the value at the bottom of the user dropdown. Useful when triaging "what version was this?" |
+| **A4** App Check SDK stub | `firebase-config.js` | Conditional App Check init: if `RECAPTCHA_SITE_KEY` is set, lazy-loads the App Check SDK and registers reCAPTCHA v3. Empty by default = no-op. See "External setup needed" below. |
+
+### B5 (concurrent edit detection) — deferred
+
+Detecting that two operators edited the same asset simultaneously needs an
+`updated_at` round-trip on every update site. Deferred because:
+- Touches every place we write to `assets`, `qr_codes`, `reprint_requests`,
+  `disposal_records`, `maintenance_tickets`, `scan_data`, `settings`.
+- Risk of breaking a working flow > value at current 1–5 operator count.
+- Proper fix needs server-side `updated_at` enforcement via Firestore rules
+  (compare `request.resource.data.updated_at` to `resource.data.updated_at`),
+  which means another rules change.
+- Revisit when ≥5 simultaneous operators are working in the system.
+
+### A3 (sheet row drift) — operating policy, not a code fix
+
+Asset allocation uses `row.sheet_row` (the gviz row index) as the join key
+between Firestore and the sheet. If finance inserts/deletes rows in the sheet
+while an operator is mid-allocation, the cell_update will land on the wrong
+row.
+
+**Operating policy** (must be communicated to finance, not enforceable in
+code):
+1. Finance only **appends** to `Invoice_Asset_Intake`. Never insert rows in
+   the middle. Never delete rows.
+2. If a row was entered in error, blank out columns A–P and add `IGNORED` to
+   Remarks. Do not delete the row.
+3. Operators should `Sync Now` immediately before allocating a batch of IDs to
+   pull the freshest sheet rows.
+4. Allocations are protected by per-row locks (`asset_allocations/sheet_row_N`)
+   so re-clicking the same row never burns a new ID.
+
+A real fix (UUID per row, or just-in-time identity verification) is possible
+but would need a sheet schema change. Don't do it unless drift incidents
+actually start happening.
+
+### F3 (admin lockout) — recovery procedure
+
+If the **only Global Admin** sets themselves to `active: false` or assigns
+themselves a non-admin role, no one in the system can re-elevate them. To
+recover:
+
+1. Sign in to **Firebase Console** with the project owner's Google account.
+2. Firestore Database → `users/{uid}` → edit the doc directly.
+3. Set `role` back to `"global_admin"` and `active` back to `true`.
+4. Sign back into the FAR site.
+
+Avoid this by never deactivating the last admin from the UI. (We don't enforce
+this in rules because the validation logic is brittle — too easy to lock
+people out via edge cases.)
+
+---
+
+## 15. External setup steps for this pass
+
+Three items in the pass require something you do **outside the code**:
+
+### 1. Redeploy the Apps Script (mandatory — sheet writes will fail otherwise)
+
+Reason: `setup_sheet.gs` now requires the shared secret. The browser sends it
+on every POST. If you deploy the website without re-deploying the Apps Script,
+all sheet writes silently fail with `{ ok: false, error: "forbidden" }`.
+
+Steps:
+1. Open the Google Sheet.
+2. Extensions → Apps Script.
+3. Paste the latest `setup_sheet.gs` (the `SHARED_SECRET` constant near the
+   top must match `APPS_SCRIPT_SECRET` in `firebase-config.js`).
+4. Save (Ctrl+S).
+5. Deploy → Manage deployments → pencil icon → Version: **New version** →
+   Deploy.
+6. The `/exec` URL stays the same — no `firebase-config.js` change needed.
+7. Test: visit the `/exec` URL in a browser; should still return
+   `{"ok":true,"service":"NEH FAR Sheet Writer", ...}`.
+
+If you ever rotate `SHARED_SECRET`, change BOTH files together and redeploy.
+
+### 2. (Optional) Enable App Check for spam protection
+
+Reason: A4 added the SDK stub, but it's a no-op until you provide a reCAPTCHA
+v3 site key.
+
+Steps:
+1. Firebase Console → Project Settings → App Check → Apps → Register the web
+   app.
+2. Choose "reCAPTCHA v3" provider. Use Google's free test key during dev or
+   create a real reCAPTCHA v3 site at https://www.google.com/recaptcha/admin.
+3. Copy the **site key**.
+4. Set `RECAPTCHA_SITE_KEY` in `firebase-config.js` to that value.
+5. Push the change. Reload the FAR site once to register the App Check token.
+6. Back in Firebase Console → App Check → choose Firestore → click **Enforce**.
+7. From this point, scan_logs / scan_concerns posts from anywhere without a
+   valid token (i.e. bots) will be denied.
+
+If anything breaks, simply set `RECAPTCHA_SITE_KEY = ""` again — App Check init
+becomes a no-op.
+
+### 3. (Recommended) Sentry for error monitoring
+
+Not done in code yet. To add later:
+1. Sign up at https://sentry.io (free tier covers 5k events/month).
+2. Create a "Browser JavaScript" project; copy the DSN URL.
+3. Add a `<script>` tag at the top of each HTML file's `<body>`:
+   ```html
+   <script src="https://browser.sentry-cdn.com/8.0.0/bundle.tracing.min.js" crossorigin="anonymous"></script>
+   <script>Sentry.init({ dsn: "YOUR_DSN_HERE", tracesSampleRate: 0.1 });</script>
+   ```
+4. Errors thrown in the browser will show up in the Sentry dashboard with
+   stack traces and the user's email if you call `Sentry.setUser({ email })`
+   after sign-in.
+
+### 4. (Recommended) Firebase Analytics for usage tracking
+
+Skipped for now. To add: Firebase Console → Analytics → enable. Then add
+`getAnalytics(app)` to `firebase-config.js`. Free, no key rotation, gives you
+per-feature usage breakdowns.
+
+---
+
+## 16. CSV / Excel notes
+
+- All CSV exports prefix the file with a UTF-8 BOM (`﻿`) so Excel reads
+  Unicode (₹, é, etc.) correctly without an Import Wizard step.
+- Numeric columns (Purchase Value, Useful Life) are now exported as plain
+  numbers — Excel will auto-detect and allow `=SUM()` directly. Anything
+  containing thousand-separators or currency symbols is parsed via
+  `parseValue()` before export.
+- Date columns are exported as the human-readable string from the sheet
+  (`12-Apr-2025` style). Excel will treat these as text — that's intentional
+  to avoid timezone shenanigans.
+
+---
+
+## 17. Build / version visibility
+
+Every page now ships a `<meta name="far-build" content="YYYY-MM-DD"/>` tag.
+The dashboard shows this at the bottom of the avatar dropdown.
+
+When making any meaningful change, update the `content` value in all 4 HTML
+files: `index.html`, `dashboard.html`, `admin.html`, `scan.html`. (No
+auto-build step yet; manual.)

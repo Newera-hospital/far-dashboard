@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="far-build" content="2026-04-30"/>
 <title>FAR Dashboard  New Era Hospital</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -122,6 +123,25 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var
 .sr-item .sr-id{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;color:var(--g7);min-width:130px;}
 .sr-item .sr-desc{flex:1;font-size:12.5px;color:var(--s8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .sr-item .sr-meta{font-size:10.5px;color:var(--s5);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+
+/* Last-sync pill (topbar) */
+.last-sync-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:7px 11px;border-radius:999px;
+  background:var(--s0);border:1px solid var(--s2);
+  font-size:11px;font-weight:700;color:var(--s6);letter-spacing:.2px;
+  white-space:nowrap;cursor:default;
+}
+.last-sync-pill .ls-dot{width:7px;height:7px;border-radius:50%;background:var(--s4);box-shadow:0 0 0 3px rgba(0,0,0,.04);}
+.last-sync-pill.fresh{color:var(--g7);background:var(--g0);border-color:var(--g3);}
+.last-sync-pill.fresh .ls-dot{background:var(--g5);box-shadow:0 0 0 3px rgba(16,185,129,.18);animation:lsBlink 2.4s ease-in-out infinite;}
+.last-sync-pill.stale{color:#9a3a1d;background:#FFF5EE;border-color:#FFD9C4;}
+.last-sync-pill.stale .ls-dot{background:#F97316;}
+@keyframes lsBlink{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
+@media(max-width:640px){
+  .last-sync-pill span:last-child{display:none;}
+  .last-sync-pill{padding:7px 9px;}
+}
 
 /* Help/Guide button */
 .help-btn{
@@ -888,6 +908,19 @@ td.td-url{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:now
    on screen. Doesn't affect actual print output (that's handled in @media print). */
 .print-sheet-preview[data-print-size="small"]{transform:scale(.8);transform-origin:top center;}
 .print-sheet-preview[data-print-size="large"]{transform:scale(1.18);transform-origin:top center;}
+
+/* Page-break separator inside the preview  shows where one A4 page ends and the
+   next begins. Pure visual hint; not present in actual print output. */
+.pp-page-break{
+  grid-column:1 / -1;
+  display:flex;align-items:center;gap:14px;
+  padding:14px 0;margin:6px 0;
+  font-size:10.5px;font-weight:800;color:var(--s5);
+  text-transform:uppercase;letter-spacing:1.2px;
+}
+.pp-page-break > div{flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--s2) 0 6px,transparent 6px 12px);}
+.pp-page-break span{white-space:nowrap;}
+@media print{.pp-page-break{display:none !important;}}
 @media(max-width:900px){ .profile-grid{grid-template-columns:1fr;} }
 
 /*  SEARCH/FILTER  */
@@ -1184,6 +1217,7 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
   </div>
 
   <div class="tb-right">
+    <span id="lastSyncPill" class="last-sync-pill" title="When the asset register was last refreshed from Google Sheet"><span class="ls-dot"></span><span id="lastSyncText">Not synced yet</span></span>
     <button class="help-btn" id="helpBtn" onclick="openGuide()" title="How does this work?" aria-label="Open quick guide">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
       <span>Guide</span>
@@ -1205,6 +1239,10 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
         <button class="dd-item red" onclick="logout()">
           <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9"/></svg> Sign Out
         </button>
+        <div class="dd-divider"></div>
+        <div class="dd-item" style="font-size:10px;color:var(--s4);justify-content:space-between;font-family:'JetBrains Mono',monospace;letter-spacing:.3px;">
+          <span>BUILD</span><span id="ddBuild">-</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1444,6 +1482,17 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
         </div>
         <div id="sheetDiag" style="margin-top:14px;"></div>
       </div>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+      <div class="ch">
+        <div>
+          <div class="ct">Re-push Asset IDs to Sheet</div>
+          <div class="cs">If the sheet's column Q is missing IDs that already exist in the system (Apps Script down, network glitch, etc.), use this to re-push every allocated ID back to its row. Idempotent  re-running is safe.</div>
+        </div>
+        <button class="btn btn-out" onclick="resyncAssetIdsToSheet()" id="resyncIdsBtn">Re-push Asset IDs</button>
+      </div>
+      <div id="resyncStatus" style="padding:0 18px 14px;font-size:12px;color:var(--s5);"></div>
     </div>
   </div>
 </section>
@@ -1729,6 +1778,14 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
   <div class="fb">
     <div class="si-wrap"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="auSearch" placeholder="Search user, asset ID, action" oninput="filterAudit()"/></div>
     <select class="fsel" id="auFilter" onchange="filterAudit()"><option value="">All Actions</option><option>Asset ID Allocated</option><option>Sheet Sync</option><option>QR Generated</option><option>QR Printed</option><option>Reprint Requested</option><option>Reprint Approved</option><option>Reprint Rejected</option><option>Disposal Recorded</option><option>Maintenance Raised</option><option>Maintenance Started</option><option>Maintenance Resolved</option><option>Scan Visibility Updated</option><option>Public Scan Policy Applied</option><option>Public Report Converted</option></select>
+    <select class="fsel" id="auRange" onchange="filterAudit()" title="Limit to recent activity">
+      <option value="">All time</option>
+      <option value="1">Last 24 hours</option>
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="90">Last 90 days</option>
+    </select>
+    <select class="fsel" id="auUser" onchange="filterAudit()" title="Filter by user"></select>
   </div>
   <div class="card">
     <div class="tw"><table>
@@ -2009,6 +2066,7 @@ const STATE = {
   audit:       [],
   loading:     true,
   error:       null,
+  lastSyncedAt: 0,    // ms epoch of last successful refreshData
 };
 const PC_SEL = new Set();   // Print Center selection
 let PRINT_LAYOUT = "standard";
@@ -2279,7 +2337,9 @@ async function refreshData() {
     STATE.scanSettings = scanSettings;
     STATE.audit       = audit;
     STATE.error       = null;
+    STATE.lastSyncedAt = Date.now();
     setSyncStatus(`Synced  ${assets.length} assets  ${new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",hour12:true})}`, "ok");
+    updateLastSyncPill();
   } catch (e) {
     STATE.error = e.message;
     console.warn("[refreshData]", e);
@@ -2602,6 +2662,28 @@ window.viewAssetProfile = async (id) => {
             <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--s5);">Last updated</span><span>${a.updated||''}</span></div>
           </div>
         </div>
+        ${(() => {
+          // Print history  filter audit timeline for QR-related events.
+          const printHist = STATE.audit.filter(e =>
+            e.asset_id === id &&
+            ['QR Generated','QR Printed','Reprint Requested','Reprint Approved','Reprint Rejected','Reprint Printed'].includes(e.action)
+          ).slice(0, 12);
+          if (!printHist.length) {
+            return `<div class="card"><div class="ch"><div class="ct">Print &amp; Label History</div></div><div class="cb" style="font-size:12px;color:var(--s4);padding:14px;">No print events recorded yet for this asset.</div></div>`;
+          }
+          const items = printHist.map(e => {
+            const ts = e.timestamp?.seconds ? new Date(e.timestamp.seconds*1000).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '';
+            const cls = e.action.includes('Rejected') ? 'pill-r' : e.action.includes('Printed') ? 'pill-g' : e.action.includes('Approved') ? 'pill-b' : e.action.includes('Generated') ? 'pill-g' : 'pill-am';
+            return `<li style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed var(--s2);font-size:12px;">
+              <div><span class="pill ${cls}" style="font-size:10px;">${e.action.replace('Reprint ','RP ').replace('QR ','QR ')}</span><div style="color:var(--s5);font-size:11px;margin-top:3px;">${e.user_email || ''}</div></div>
+              <div style="text-align:right;color:var(--s6);white-space:nowrap;">${ts}</div>
+            </li>`;
+          }).join('');
+          return `<div class="card">
+            <div class="ch"><div><div class="ct">Print &amp; Label History</div><div class="cs">${printHist.length} event${printHist.length===1?'':'s'}, latest first</div></div></div>
+            <div class="cb"><ul style="list-style:none;padding:0;margin:0;">${items}</ul></div>
+          </div>`;
+        })()}
         ${!pending && canQr() ? `<div class="card">
           <div class="ch"><div><div class="ct">Public Scan Visibility</div><div class="cs">Choose what public scanners can see</div></div></div>
           <div class="cb">
@@ -3226,10 +3308,29 @@ function renderAudit(list) {
     </tr>`;
   }).join('');
 }
+function populateAuditUserFilter() {
+  const sel = document.getElementById('auUser'); if (!sel) return;
+  const users = [...new Set((STATE.audit || []).map(e => e.user_email).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Users</option>' + users.map(u => `<option value="${gsEscape(u)}"${u===cur?' selected':''}>${gsEscape(u)}</option>`).join('');
+}
 window.filterAudit = () => {
+  populateAuditUserFilter();
   const q = document.getElementById('auSearch').value.toLowerCase();
   const f = document.getElementById('auFilter').value;
-  renderAudit(STATE.audit.filter(e => (!q || [e.user_email,e.asset_id,e.action,e.notes].join(' ').toLowerCase().includes(q)) && (!f || e.action===f)));
+  const r = document.getElementById('auRange')?.value || '';
+  const u = document.getElementById('auUser')?.value || '';
+  const cutoff = r ? Date.now() - Number(r) * 86_400_000 : 0;
+  renderAudit(STATE.audit.filter(e => {
+    if (q && ![e.user_email,e.asset_id,e.action,e.notes].join(' ').toLowerCase().includes(q)) return false;
+    if (f && e.action !== f) return false;
+    if (u && e.user_email !== u) return false;
+    if (cutoff) {
+      const ts = e.timestamp?.seconds ? e.timestamp.seconds * 1000 : 0;
+      if (!ts || ts < cutoff) return false;
+    }
+    return true;
+  }));
 };
 window.exportAudit = () => {
   const rows = [['#','Timestamp','User','Role','Action','Asset ID','Details']];
@@ -3396,19 +3497,40 @@ function pcUpdateCount() {
   const el = document.getElementById('pcSelCnt'); if (el) el.textContent = `${cnt} selected`;
   const btn = document.getElementById('pcPreviewBtn'); if (btn) btn.disabled = cnt === 0;
 }
+/* Approx labels-per-A4 page  drives the page-break indicator in preview.
+   These match the @media print grid columns and the implicit row-fit count. */
+function labelsPerA4Page() {
+  if (PRINT_SIZE === 'small') return 24;     // 4 cols  6 rows
+  if (PRINT_SIZE === 'large') return  6;     // 2 cols  3 rows
+  return 12;                                  // medium  3 cols  4 rows
+}
 window.pcOpenPreview = async () => {
   return singleFlight('print:preview', async () => {
   if (!PC_SEL.size) return;
   const sheet = document.getElementById('ppSheet');
   sheet.innerHTML = '<div style="padding:20px;text-align:center;color:var(--s4);">Rendering labels</div>';
-  document.getElementById('ppCount').textContent = `${PC_SEL.size}  ${printLayoutName()}`;
+  const perPage = labelsPerA4Page();
+  const total   = PC_SEL.size;
+  const pages   = Math.ceil(total / perPage);
+  document.getElementById('ppCount').textContent = `${total}  ${printLayoutName()}  ${pages} A4 page${pages===1?'':'s'} (${perPage}/page)`;
   openMo('mo-print');
-  const chunks = await Promise.all([...PC_SEL].map(async id => {
+  const ids = [...PC_SEL];
+  const labels = await Promise.all(ids.map(async id => {
     const a = STATE.assets.find(x=>x.id===id) || { id, desc:'' };
     const dataUrl = await qrDataUrl(SCAN_BASE + a.id, 200);
     return buildPrintLabel(a, dataUrl);
   }));
-  sheet.innerHTML = chunks.join('');
+  // Insert a "Page N break" divider every perPage labels so the operator can
+  // visualize how many sheets they're about to print.
+  const pieces = [];
+  labels.forEach((html, i) => {
+    if (i > 0 && i % perPage === 0) {
+      const pageNum = Math.floor(i / perPage) + 1;
+      pieces.push(`<div class="pp-page-break"><span>End of page ${pageNum - 1}</span><div></div><span>Page ${pageNum} of ${pages}</span></div>`);
+    }
+    pieces.push(html);
+  });
+  sheet.innerHTML = pieces.join('');
   }, { button: document.getElementById('pcPreviewBtn'), busyText:'Previewing...' });
 };
 window.pcPrintNow = async () => {
@@ -3756,6 +3878,239 @@ function reportExports(assets) {
     </div>
   </div>`;
 }
+/* ----------  Reports  fiscal year filter + additions/ageing/past-life  ---------- */
+const FY_START_MONTH = 4;   // April  Indian financial year. Override via Settings later.
+function fiscalYearOf(date) {
+  if (!date) return null;
+  const d = (date instanceof Date) ? date : new Date(date);
+  if (isNaN(d.getTime())) return null;
+  const y = d.getFullYear(), m = d.getMonth() + 1;
+  return m >= FY_START_MONTH ? y : y - 1;
+}
+function fyLabel(y) { return y == null ? 'All time' : `FY ${y}-${String((y+1)%100).padStart(2,'0')}`; }
+function fyAvailable(assets, disposal) {
+  const yrs = new Set();
+  (assets||[]).forEach(a => { const y = fiscalYearOf(a.itu) ?? fiscalYearOf(a.invDate); if (y) yrs.add(y); });
+  (disposal||[]).forEach(d => {
+    const raw = d.effective_date?.seconds ? new Date(d.effective_date.seconds*1000) : d.effective_date;
+    const y = fiscalYearOf(raw); if (y) yrs.add(y);
+  });
+  const arr = [...yrs].sort((a,b) => b-a);
+  if (!arr.length) {
+    const now = new Date();
+    arr.push(now.getMonth()+1 >= FY_START_MONTH ? now.getFullYear() : now.getFullYear()-1);
+  }
+  return arr;
+}
+let REPORT_FY = null;   // null = all time
+function withinFy(date, fy) { return fy == null ? true : fiscalYearOf(date) === fy; }
+function additionsInFy(assets, fy) {
+  return (assets||[]).filter(a => withinFy(a.itu || a.invDate, fy));
+}
+function disposalsInFy(disposal, fy) {
+  return (disposal||[]).filter(d => {
+    const raw = d.effective_date?.seconds ? new Date(d.effective_date.seconds*1000) : d.effective_date;
+    return withinFy(raw, fy);
+  });
+}
+function parseDateLoose(v) {
+  if (!v) return null;
+  if (v instanceof Date) return v;
+  if (typeof v === 'object' && v.seconds) return new Date(v.seconds * 1000);
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+function daysAgo(d) {
+  const dt = parseDateLoose(d); if (!dt) return null;
+  return Math.floor((Date.now() - dt.getTime()) / 86_400_000);
+}
+function reportFyHeader(years) {
+  const opts = [`<option value="">All time</option>`].concat(
+    years.map(y => `<option value="${y}"${REPORT_FY===y?' selected':''}>${fyLabel(y)}</option>`)
+  ).join('');
+  return `<div class="card" style="margin-bottom:18px;">
+    <div class="ch">
+      <div><div class="ct">Reporting period</div><div class="cs">Filters Additions and Disposals below. Quick stats and per-department breakdown always show the full register.</div></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="reportFySelect" onchange="onReportFyChange(this.value)" class="fi" style="min-width:170px;">${opts}</select>
+        <button class="btn btn-out btn-sm" onclick="printReportSummary()">Print Summary</button>
+      </div>
+    </div>
+  </div>`;
+}
+function reportAdditions(assets, fy) {
+  const sub = additionsInFy(assets, fy);
+  const total = sub.reduce((s,a) => s + parseValue(a.value), 0);
+  const period = fyLabel(fy);
+  if (!sub.length) {
+    return `<div class="card"><div class="ch"><div><div class="ct">Additions  ${period}</div></div></div><div class="cb" style="padding:18px;color:var(--s4);">No additions in this period.</div></div>`;
+  }
+  const rows = sub.slice().sort((a,b) => {
+    const da = parseDateLoose(a.itu)?.getTime() || 0;
+    const dbb = parseDateLoose(b.itu)?.getTime() || 0;
+    return dbb - da;
+  }).slice(0, 50).map(a => `<tr>
+    <td class="mono" style="font-size:11px;">${gsEscape(a.id || '(pending)')}</td>
+    <td style="font-size:12px;font-weight:600;">${gsEscape(a.desc || '')}</td>
+    <td class="td-sm" style="font-size:12px;">${gsEscape(a.dept || a.location || '')}</td>
+    <td class="td-sm" style="font-size:12px;">${gsEscape(a.itu || a.invDate || '')}</td>
+    <td class="td-sm" style="text-align:right;font-family:'JetBrains Mono',monospace;">Rs. ${inr(parseValue(a.value))}</td>
+  </tr>`).join('');
+  return `<div class="card">
+    <div class="ch">
+      <div><div class="ct">Additions  ${period}</div><div class="cs">${sub.length} asset${sub.length===1?'':'s'} added, Rs. ${inr(total)} total ${sub.length>50?'(showing latest 50)':''}</div></div>
+      <button class="btn btn-out btn-sm" onclick="exportReport('additions')">Download CSV</button>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Asset ID</th><th>Description</th><th>Department / Location</th><th>Put-to-Use</th><th style="text-align:right;">Purchase Value</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+function reportAgeing(assets) {
+  const pending = (assets||[]).filter(a => a.pending || !a.id);
+  if (!pending.length) {
+    return `<div class="card"><div class="ch"><div><div class="ct">Pending Allocations</div></div></div><div class="cb" style="padding:18px;color:var(--s4);">All sheet rows have Asset IDs. Nothing pending.</div></div>`;
+  }
+  const enriched = pending.map(a => {
+    const refDate = a.itu || a.invDate || a.updated;
+    return { ...a, ageDays: daysAgo(refDate) };
+  });
+  const overdue = enriched.filter(a => (a.ageDays ?? 0) > 14);
+  const sorted = enriched.slice().sort((a,b) => (b.ageDays ?? -1) - (a.ageDays ?? -1)).slice(0, 60);
+  const rows = sorted.map(a => {
+    const ageTxt = a.ageDays == null ? 'no date' : `${a.ageDays}d`;
+    const ageCls = a.ageDays == null ? 'pill-gr' : a.ageDays > 30 ? 'pill-r' : a.ageDays > 14 ? 'pill-am' : a.ageDays > 7 ? 'pill-b' : 'pill-g';
+    return `<tr>
+      <td class="td-sm"><span class="pill ${ageCls}">${ageTxt}</span></td>
+      <td class="mono" style="font-size:11px;">Row ${a.sheet_row || '?'}</td>
+      <td style="font-size:12px;font-weight:600;">${gsEscape(a.desc || '')}</td>
+      <td class="td-sm" style="font-size:12px;">${gsEscape(a.dept || a.location || '')}</td>
+      <td class="td-sm" style="font-size:12px;">${gsEscape(a.invoice || '')}</td>
+      <td class="td-sm" style="font-size:12px;">${gsEscape(a.invDate || a.itu || '')}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="card">
+    <div class="ch">
+      <div><div class="ct">Pending Allocations  Ageing</div><div class="cs">${pending.length} pending, ${overdue.length} older than 14 days. Nag finance / custodian to allocate Asset IDs.</div></div>
+      <button class="btn btn-out btn-sm" onclick="exportReport('ageing')">Download CSV</button>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Age</th><th>Sheet Row</th><th>Description</th><th>Department / Location</th><th>Invoice</th><th>Invoice Date</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+function reportPastLife(assets) {
+  const today = new Date();
+  const expired = [];
+  (assets||[]).forEach(a => {
+    const life = parseFloat(parseValue(a.life)); if (!life || life <= 0) return;
+    const start = parseDateLoose(a.itu) || parseDateLoose(a.invDate); if (!start) return;
+    const expiry = new Date(start); expiry.setFullYear(expiry.getFullYear() + Math.floor(life));
+    if (expiry < today) expired.push({ ...a, _expiry: expiry, _lifeYears: life });
+  });
+  if (!expired.length) {
+    return `<div class="card"><div class="ch"><div><div class="ct">Past Useful Life</div><div class="cs">Assets whose Put-to-Use date + Useful Life is in the past. Useful for audit and disposal review.</div></div></div><div class="cb" style="padding:18px;color:var(--s4);">No assets are past their useful life.</div></div>`;
+  }
+  const totalValue = expired.reduce((s,a)=>s+parseValue(a.value),0);
+  const rows = expired.slice().sort((a,b)=>a._expiry-b._expiry).slice(0, 60).map(a => `<tr>
+    <td class="mono" style="font-size:11px;">${gsEscape(a.id || '')}</td>
+    <td style="font-size:12px;font-weight:600;">${gsEscape(a.desc || '')}</td>
+    <td class="td-sm" style="font-size:12px;">${gsEscape(a.dept || a.location || '')}</td>
+    <td class="td-sm" style="font-size:12px;">${gsEscape(a.itu || '')}</td>
+    <td class="td-sm" style="font-size:12px;">${a._lifeYears} yr</td>
+    <td class="td-sm" style="font-size:12px;">${a._expiry.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td>
+    <td class="td-sm" style="text-align:right;font-family:'JetBrains Mono',monospace;">Rs. ${inr(parseValue(a.value))}</td>
+    <td class="td-sm"><span class="pill pill-r">Past life</span></td>
+  </tr>`).join('');
+  return `<div class="card">
+    <div class="ch">
+      <div><div class="ct">Past Useful Life  ${expired.length} asset${expired.length===1?'':'s'}</div><div class="cs">Total purchase value Rs. ${inr(totalValue)}. Review for disposal or revaluation.</div></div>
+      <button class="btn btn-out btn-sm" onclick="exportReport('past_life')">Download CSV</button>
+    </div>
+    <div class="tw"><table>
+      <thead><tr><th>Asset ID</th><th>Description</th><th>Department / Location</th><th>Put to Use</th><th>Life</th><th>Expired On</th><th style="text-align:right;">Purchase Value</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+window.onReportFyChange = function (val) {
+  REPORT_FY = val === '' ? null : Number(val);
+  renderReports();
+};
+
+window.printReportSummary = function () {
+  const assets   = STATE.assets   || [];
+  const disposal = STATE.disposal || [];
+  const reprints = STATE.reprints || [];
+  const fy = REPORT_FY;
+  const period = fyLabel(fy);
+  const additions = additionsInFy(assets, fy);
+  const dispsInFy = disposalsInFy(disposal, fy);
+  const totalCount = assets.length;
+  const totalValue = assets.reduce((s,a)=>s+parseValue(a.value),0);
+  const tagged    = assets.filter(a => a.qr === 'issued' || a.qr === 'printed').length;
+  const pending   = assets.filter(a => a.qr === 'pending' || a.pending).length;
+  const reprintsPending = (reprints||[]).filter(r => (r.status||'').toLowerCase().includes('pending')).length;
+  const byDept = groupAssets(assets, a => a.dept || a.location || 'Unassigned');
+  const tableRows = (gs) => gs.map(g => `<tr><td>${gsEscape(g.key)}</td><td style="text-align:right;">${g.count}</td><td style="text-align:right;">Rs. ${inr(g.totalValue)}</td></tr>`).join('');
+  const additionsValue = additions.reduce((s,a)=>s+parseValue(a.value),0);
+  const dispValue = dispsInFy.reduce((s,d)=>s+parseValue(d.purchase_value || d.value || 0),0);
+  const printable = `<!doctype html><html><head><meta charset="utf-8"><title>FAR Summary  ${period}</title>
+    <style>
+      @page{size:A4;margin:14mm;}
+      body{font-family:Inter,system-ui,sans-serif;color:#0a0a0a;line-height:1.5;}
+      h1{font-family:'Cormorant Garamond',serif;font-size:24pt;margin:0 0 4pt;}
+      h2{font-size:13pt;margin:18pt 0 6pt;border-bottom:1pt solid #ccc;padding-bottom:3pt;}
+      .meta{color:#444;font-size:9pt;margin-bottom:14pt;}
+      table{width:100%;border-collapse:collapse;font-size:10pt;}
+      th,td{padding:5pt 7pt;border-bottom:.4pt solid #ccc;text-align:left;}
+      th{background:#f3f4f6;font-weight:700;}
+      .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10pt;margin:8pt 0;}
+      .stat{border:.5pt solid #ddd;border-radius:4pt;padding:8pt 10pt;}
+      .stat .v{font-size:15pt;font-weight:800;}
+      .stat .l{font-size:8.5pt;color:#666;text-transform:uppercase;letter-spacing:.4pt;}
+      .sign{margin-top:36pt;display:flex;justify-content:space-between;font-size:10pt;}
+      .sign div{border-top:.6pt solid #000;padding-top:6pt;width:30%;text-align:center;}
+      footer{margin-top:20pt;font-size:8pt;color:#888;text-align:center;}
+    </style></head><body>
+    <h1>New Era Hospital  Fixed Asset Register Summary</h1>
+    <div class="meta">Period: <strong>${period}</strong> &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})} &nbsp;|&nbsp; Unit: ${gsEscape(U.cid || DEFAULT_ENTITY_CODE || '-')}</div>
+    <h2>Register snapshot (all-time)</h2>
+    <div class="grid">
+      <div class="stat"><div class="v">${totalCount}</div><div class="l">Total Assets</div></div>
+      <div class="stat"><div class="v">Rs. ${inr(totalValue)}</div><div class="l">Total Purchase Value</div></div>
+      <div class="stat"><div class="v">${tagged}</div><div class="l">QR Tagged</div></div>
+      <div class="stat"><div class="v">${pending}</div><div class="l">QR Pending</div></div>
+      <div class="stat"><div class="v">${reprintsPending}</div><div class="l">Pending Reprints</div></div>
+      <div class="stat"><div class="v">${disposal.length}</div><div class="l">Total Disposals</div></div>
+    </div>
+    <h2>Activity in ${period}</h2>
+    <table><thead><tr><th>Activity</th><th style="text-align:right;">Count</th><th style="text-align:right;">Value (Rs.)</th></tr></thead>
+      <tbody>
+        <tr><td>Assets added</td><td style="text-align:right;">${additions.length}</td><td style="text-align:right;">${inr(additionsValue)}</td></tr>
+        <tr><td>Assets disposed</td><td style="text-align:right;">${dispsInFy.length}</td><td style="text-align:right;">${inr(dispValue)}</td></tr>
+      </tbody>
+    </table>
+    <h2>Department-wise breakdown</h2>
+    <table><thead><tr><th>Department</th><th style="text-align:right;">Count</th><th style="text-align:right;">Value (Rs.)</th></tr></thead>
+      <tbody>${tableRows(byDept)}</tbody>
+    </table>
+    <div class="sign">
+      <div>Prepared by</div>
+      <div>Reviewed by</div>
+      <div>Approved by</div>
+    </div>
+    <footer>NEH FAR  Confidential. Auto-generated. Verify against source data before any external use.</footer>
+    </body></html>`;
+  const w = window.open('', '_blank', 'noopener');
+  if (!w) { toast('Pop-up blocked  allow pop-ups for this site to print summary', 'er'); return; }
+  w.document.open(); w.document.write(printable); w.document.close();
+  setTimeout(() => { try { w.focus(); w.print(); } catch {} }, 350);
+};
+
 window.renderReports = function renderReports() {
   const root = document.getElementById('reportsContent'); if (!root) return;
   const assets   = STATE.assets   || [];
@@ -3765,20 +4120,61 @@ window.renderReports = function renderReports() {
     root.innerHTML = `<div class="card"><div class="cb" style="padding:32px;text-align:center;color:var(--s5);">No asset data loaded yet. Open <strong>Sync from Sheet</strong> and click <strong>Sync Now</strong> to populate the register, then come back.</div></div>`;
     return;
   }
+  const years      = fyAvailable(assets, disposal);
   const byDept     = groupAssets(assets, a => a.dept || a.location || 'Unassigned');
   const byCust     = groupAssets(assets, a => a.sheetCustodian || a.custodian || 'Unassigned');
   const byCategory = groupAssets(assets, a => a.cat || 'Uncategorised');
   const byState    = groupAssets(assets, a => (a.state || 'unknown').replace(/_/g, ' '));
+  const dispShow   = REPORT_FY != null ? disposalsInFy(disposal, REPORT_FY) : disposal;
   root.innerHTML = `
+    ${reportFyHeader(years)}
     ${reportQuickStats(assets, disposal, reprints)}
+    ${reportAdditions(assets, REPORT_FY)}
+    ${reportAgeing(assets)}
+    ${reportPastLife(assets)}
     ${reportGroupTable('Department-wise Asset Register', 'Department', byDept, 'by_department')}
     ${reportGroupTable('Custodian-wise Asset Register', 'Custodian', byCust, 'by_custodian')}
     ${reportGroupTable('Category-wise Asset Register', 'Category', byCategory, 'by_category')}
     ${reportGroupTable('State-wise Snapshot', 'State', byState, 'by_state')}
-    ${reportDisposals(disposal)}
+    ${reportDisposals(dispShow)}
     ${reportExports(assets)}
   `;
 };
+/* Re-push every allocated Asset ID back to column Q of its sheet row.
+   Idempotent  if column Q already has the right value, the write is a no-op.
+   Throttled at one per 250ms to stay well within Apps Script Web App quotas. */
+window.resyncAssetIdsToSheet = async function () {
+  return singleFlight('resyncIds', async () => {
+    const status = document.getElementById('resyncStatus');
+    const setMsg = (msg, color) => { if (status) { status.textContent = msg; status.style.color = color || 'var(--s5)'; } };
+    const candidates = (STATE.assets || []).filter(a => a.id && a.sheet_row);
+    if (!candidates.length) {
+      setMsg('Nothing to resync  no allocated assets with known sheet rows yet.', 'var(--s5)');
+      return;
+    }
+    if (!confirm(`This will push ${candidates.length} asset ID(s) back to the Google Sheet column Q. Continue?`)) return;
+    let ok = 0, fail = 0;
+    for (let i = 0; i < candidates.length; i++) {
+      const a = candidates[i];
+      setMsg(`Re-pushing ${i + 1} of ${candidates.length}  ${a.id} (row ${a.sheet_row})`, 'var(--a7)');
+      const res = await postSheetJob({
+        tab:   "Invoice_Asset_Intake",
+        op:    "cell_update",
+        cell:  `Q${a.sheet_row}`,
+        value: a.id,
+        meta:  { kind: 'Resync Asset ID', aid: a.id, sheet_row: a.sheet_row, by: U.email || U.name || '' },
+      });
+      if (res && res.ok) ok++; else fail++;
+      // Small throttle so Apps Script + Sheets API stay happy.
+      await new Promise(r => setTimeout(r, 250));
+    }
+    setMsg(`Resync complete  ${ok} pushed, ${fail} failed.`, fail ? 'var(--r6)' : 'var(--g7)');
+    if (!fail) toast(`Re-pushed ${ok} Asset IDs to the sheet.`, 'ok');
+    else toast(`${fail} push(es) failed. Check Apps Script logs.`, 'er');
+    try { await pushAudit({ action: 'Sheet Sync', targetType: 'sync', detail: `Resync IDs: ${ok} ok, ${fail} fail (${candidates.length} total)` }); } catch {}
+  }, { button: document.getElementById('resyncIdsBtn'), busyText: 'Resyncing...' });
+};
+
 window.exportReport = function exportReport(kind) {
   const assets   = STATE.assets   || [];
   const disposal = STATE.disposal || [];
@@ -3821,6 +4217,48 @@ window.exportReport = function exportReport(kind) {
     ]));
     return downloadCsv(rows, `FAR_Reprints_${today}.csv`);
   }
+  if (kind === 'additions') {
+    const sub = additionsInFy(assets, REPORT_FY);
+    const rows = [['Asset ID','Description','Department','Location','Custodian','Category','Vendor','Invoice No','Invoice Date','Put to Use','Purchase Value (Rs.)','Allocated By','Source']];
+    sub.forEach(a => rows.push([
+      a.id||'', a.desc||'', a.dept||'', a.location||'', a.sheetCustodian||a.custodian||'', a.cat||'',
+      a.vendor||'', a.invoice||'', a.invDate||'', a.itu||'',
+      Math.round(parseValue(a.value)) || 0,
+      a.allocated_by||'', a.source||'',
+    ]));
+    return downloadCsv(rows, `FAR_Additions_${REPORT_FY != null ? REPORT_FY : 'AllTime'}_${today}.csv`);
+  }
+  if (kind === 'ageing') {
+    const pending = (assets||[]).filter(a => a.pending || !a.id);
+    const rows = [['Sheet Row','Description','Department','Location','Invoice','Invoice Date','Put to Use','Days Pending']];
+    pending.forEach(a => {
+      const refDate = a.itu || a.invDate || a.updated;
+      rows.push([
+        a.sheet_row||'', a.desc||'', a.dept||'', a.location||'',
+        a.invoice||'', a.invDate||'', a.itu||'',
+        daysAgo(refDate) ?? '',
+      ]);
+    });
+    return downloadCsv(rows, `FAR_Ageing_${today}.csv`);
+  }
+  if (kind === 'past_life') {
+    const today2 = new Date();
+    const expired = [];
+    (assets||[]).forEach(a => {
+      const life = parseFloat(parseValue(a.life)); if (!life || life <= 0) return;
+      const start = parseDateLoose(a.itu) || parseDateLoose(a.invDate); if (!start) return;
+      const expiry = new Date(start); expiry.setFullYear(expiry.getFullYear() + Math.floor(life));
+      if (expiry < today2) expired.push({ ...a, _expiry: expiry, _lifeYears: life });
+    });
+    const rows = [['Asset ID','Description','Department','Location','Put to Use','Useful Life (Years)','Expired On','Purchase Value (Rs.)','State']];
+    expired.forEach(a => rows.push([
+      a.id||'', a.desc||'', a.dept||'', a.location||'',
+      a.itu||'', a._lifeYears, a._expiry.toISOString().slice(0,10),
+      Math.round(parseValue(a.value)) || 0,
+      a.state||'',
+    ]));
+    return downloadCsv(rows, `FAR_PastLife_${today}.csv`);
+  }
   if (kind === 'audit_trail') {
     const rows = [['#','Timestamp','User','Role','Action','Asset ID','Details']];
     audit.forEach((e,i) => {
@@ -3830,11 +4268,15 @@ window.exportReport = function exportReport(kind) {
     return downloadCsv(rows, `FAR_Audit_${today}.csv`);
   }
   if (kind === 'full_register') {
-    const rows = [['Asset ID','Description','Department','Location','Custodian','Category','Vendor','Invoice No','Invoice Date','Serial No','Model No','Purchase Value','Put to Use','Useful Life (yrs)','Dep Method','Remarks','State','QR Status','Condition','Source','Last Updated']];
+    const rows = [['Asset ID','Description','Department','Location','Custodian','Category','Vendor','Invoice No','Invoice Date','Serial No','Model No','Purchase Value (Rs.)','Put to Use','Useful Life (Years)','Dep Method','Remarks','State','QR Status','Condition','Source','Last Updated']];
     assets.forEach(a => rows.push([
       a.id||'', a.desc||'', a.dept||'', a.location||'', a.sheetCustodian || a.custodian || '', a.cat||'',
       a.vendor||'', a.invoice||'', a.invDate||'', a.serial||'', a.model||'',
-      a.value||'', a.itu||'', a.life||'', a.depMeth||'', a.remarks||'', a.state||'', a.qr||'',
+      // Purchase Value + Useful Life as plain numbers so Excel can SUM/AVG.
+      Math.round(parseValue(a.value)) || 0,
+      a.itu||'',
+      Number(parseValue(a.life)) || '',
+      a.depMeth||'', a.remarks||'', a.state||'', a.qr||'',
       a.condition||'', a.source||'', a.updated||'',
     ]));
     return downloadCsv(rows, `FAR_Full_Register_${today}.csv`);
@@ -3850,7 +4292,7 @@ window.go = (key) => {
   const sec = document.getElementById(SEC_MAP[key]); if(sec) sec.classList.add('on');
   document.querySelectorAll('.nav').forEach(n => { if(n.getAttribute('onclick')?.includes(`'${key}'`)) n.classList.add('on'); });
   if (window.innerWidth < 768) closeMob();
-  if (key === 'audit') renderAudit(STATE.audit);
+  if (key === 'audit') { populateAuditUserFilter(); renderAudit(STATE.audit); }
   if (key === 'scan-settings') renderScanSettings();
   if (key === 'reports') renderReports();
   if (!suppressNextNavPush) {
@@ -4045,6 +4487,36 @@ function gsHide() {
   document.getElementById('globalSearchResults')?.classList.remove('on');
   GS_SEL = -1;
 }
+
+//  LAST-SYNC PILL  (topbar  shows time since last refreshData)
+function relativeTime(ms) {
+  if (!ms) return "Not synced yet";
+  const diff = Date.now() - ms;
+  if (diff < 30_000)        return "Just now";
+  if (diff < 60_000)        return `${Math.floor(diff/1000)}s ago`;
+  if (diff < 60*60_000)     return `${Math.floor(diff/60_000)} min ago`;
+  if (diff < 24*60*60_000)  return `${Math.floor(diff/3_600_000)} hr ago`;
+  return `${Math.floor(diff/86_400_000)} d ago`;
+}
+function updateLastSyncPill() {
+  const pill = document.getElementById('lastSyncPill'); if (!pill) return;
+  const txt  = document.getElementById('lastSyncText'); if (!txt) return;
+  const last = STATE.lastSyncedAt || 0;
+  txt.textContent = last ? `Synced ${relativeTime(last)}` : "Not synced yet";
+  pill.classList.remove('fresh', 'stale');
+  if (!last) return;
+  const ageMs = Date.now() - last;
+  if (ageMs < 5*60_000)        pill.classList.add('fresh');     // green pulse for first 5 min
+  else if (ageMs > 30*60_000)  pill.classList.add('stale');     // amber after 30 min
+}
+setInterval(updateLastSyncPill, 30_000);
+
+//  BUILD VERSION  (shown in avatar dropdown)
+(function showBuild() {
+  const meta = document.querySelector('meta[name="far-build"]');
+  const el   = document.getElementById('ddBuild');
+  if (meta && el) el.textContent = meta.getAttribute('content') || '-';
+})();
 
 window.addEventListener('DOMContentLoaded', () => {
   // Auto-show guide on first visit only.

@@ -26,6 +26,14 @@
 /* ----------  Web App writer (called by the FAR website) ---------- */
 
 /**
+ * Shared secret. Must match APPS_SCRIPT_SECRET in firebase-config.js. Posts that
+ * don't carry this string in their JSON body are rejected. Rotate this value
+ * whenever you rotate the matching constant in firebase-config.js  any old
+ * deployment of the website will then be unable to write to the sheet.
+ */
+const SHARED_SECRET = "neh-far-2026-rotate-me-q9s7v3kl";
+
+/**
  * HTTP entry point. The browser POSTs JSON jobs of two shapes:
  *
  *   Append a row:
@@ -48,6 +56,13 @@ function doPost(e) {
       return jsonOut_({ ok: false, error: "empty request body" });
     }
     const job = JSON.parse(e.postData.contents);
+
+    // Reject anything that doesn't carry the right shared secret. Public Web
+    // Apps deployed as "Anyone" are world-reachable; this check is what keeps
+    // random callers from spamming our sheet.
+    if (!job || job.secret !== SHARED_SECRET) {
+      return jsonOut_({ ok: false, error: "forbidden" });
+    }
 
     const tab = String(job.tab || "").trim();
     if (!tab) return jsonOut_({ ok: false, error: "missing 'tab'" });

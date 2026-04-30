@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="far-build" content="2026-04-30"/>
 <title>Admin Panel  New Era Hospital FAR</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -1022,27 +1023,82 @@ function formatAdminDate(v){
   return String(v);
 }
 
+function inviteState(u){
+  // Returns { label, cls } describing the invite freshness for a not-yet-signed-in user.
+  if (!u.pending_first_signin) return null;
+  const exp = u.expiresAt;
+  let expDate = null;
+  if (exp instanceof Date) expDate = exp;
+  else if (exp && typeof exp === 'object' && exp.seconds) expDate = new Date(exp.seconds * 1000);
+  else if (typeof exp === 'string' || typeof exp === 'number') { const d = new Date(exp); if (!isNaN(d)) expDate = d; }
+  if (!expDate) return { label:'Pending  no expiry', cls:'amber' };
+  const daysLeft = Math.floor((expDate - Date.now()) / 86_400_000);
+  if (daysLeft < 0)  return { label:`Expired ${-daysLeft}d ago`, cls:'red' };
+  if (daysLeft <= 7) return { label:`Pending  expires in ${daysLeft}d`, cls:'amber' };
+  return { label:`Pending  expires in ${daysLeft}d`, cls:'amber' };
+}
 function renderUsersTable(){
   const coMap = {};
   window._companies.forEach(c=>{ coMap[c.id]=c.name; });
   document.getElementById('users-tbody').innerHTML = window._users.map(u=>{
     const protectedAdmin = isProtectedGlobalAdmin(u);
     const companyText = protectedAdmin ? 'All Hospital Units - New Era Group' : (coMap[u.companyId] || 'Not assigned');
+    const inv = inviteState(u);
+    const statusCell = inv
+      ? `<span class="pill ${inv.cls}">${inv.label}</span>`
+      : `<span class="pill ${u.active?'green':'red'}">${u.active?'Active':'Inactive'}</span>`;
+    const actions = protectedAdmin
+      ? '<span class="pill green">Protected</span>'
+      : (inv
+          ? `<button class="action-btn" onclick="resendInvite('${u.id}')">Resend Invite</button><button class="action-btn" onclick="editUser('${u.id}')">Edit</button><button class="action-btn danger" onclick="toggleUserActive('${u.id}')">${u.active?'Deactivate':'Activate'}</button>`
+          : `<button class="action-btn" onclick="editUser('${u.id}')">Edit</button><button class="action-btn danger" onclick="toggleUserActive('${u.id}')">${u.active?'Deactivate':'Activate'}</button>`
+        );
     return `
     <tr>
       <td style="font-weight:600">${u.name}</td>
       <td style="color:var(--s-500);font-size:12px">${u.email}</td>
       <td><span class="pill ${rolePillClass(u.role)}">${u.role.replace(/_/g,' ')}</span></td>
       <td style="font-size:12px;color:var(--s-500)">${companyText}</td>
-      <td><span class="pill ${u.active?'green':'red'}">${u.active?'Active':'Inactive'}</span></td>
-      <td>
-        ${protectedAdmin
-          ? '<span class="pill green">Protected</span>'
-          : `<button class="action-btn" onclick="editUser('${u.id}')">Edit</button><button class="action-btn danger" onclick="toggleUserActive('${u.id}')">${u.active?'Deactivate':'Activate'}</button>`}
-      </td>
+      <td>${statusCell}</td>
+      <td>${actions}</td>
     </tr>`;
   }).join('');
 }
+
+window.resendInvite = async function(id){
+  return adminSingleFlight('resendInvite:'+id, async () => {
+    const u = window._users.find(x => x.id === id);
+    if (!u) return showToast('User not found.');
+    if (!u.pending_first_signin) return showToast('User has already signed in once.');
+    if (!confirm(`Resend invite to ${u.email}? This will refresh the 30-day expiry.`)) return;
+    if (devMode) { showToast('Dev mode  invite resend simulated.'); return; }
+    const newExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    try {
+      await setDoc(doc(db, 'user_invites', id), {
+        ...u,
+        active: true,
+        expiresAt: newExpiry,
+        resentAt: serverTimestamp(),
+        resentBy: sessionStorage.getItem('email') || '',
+      }, { merge:true });
+      // Mirror the new expiry into the placeholder users doc too.
+      await setDoc(doc(db, 'users', id), { expiresAt: newExpiry, pending_first_signin: true }, { merge:true });
+      u.expiresAt = newExpiry;
+      await pushAdminAudit({
+        entityId: u.companyId || GROUP_ENTITY_ID,
+        action: 'Invite Resent',
+        targetType: 'user',
+        targetId: id,
+        notes: `${u.email}  expiry refreshed to ${newExpiry.toISOString().slice(0,10)}`,
+      });
+      renderUsersTable();
+      showToast(`Invite refreshed. Tell ${u.email} to sign in within 30 days.`);
+    } catch(e) {
+      console.error('[resendInvite]', e);
+      showToast('Resend failed: ' + (e.message || e));
+    }
+  });
+};
 
 function renderAdminAuditTable(){
   const tb = document.getElementById('audit-tbody');
@@ -1281,6 +1337,10 @@ window.saveUser = async function(){
   if(role === 'global_admin'){ showToast('Global Admin is protected. Add users as Sub Admin and assign a company.'); return; }
   if(role === 'sub_admin' && !company){ showToast('Assign Sub Admin to a company / unit.'); return; }
   const docId = email.replace(/[^a-z0-9]/g,'_');
+  // Invite expires 30 days from creation. Stored as a JS Date so client-side
+  // filters can compare without needing serverTimestamp resolution.
+  const INVITE_TTL_DAYS = 30;
+  const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000);
   const payload = {
     name, email, role,
     companyId:  company || '',
@@ -1288,6 +1348,7 @@ window.saveUser = async function(){
     active:     true,
     createdBy:  sessionStorage.getItem('email') || '',
     createdAt:  serverTimestamp(),
+    expiresAt:  expiresAt,
   };
   try {
       if (editingUserId) {

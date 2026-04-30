@@ -24,6 +24,13 @@ export const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edi
 //  Execute as: Me, Who has access: Anyone  Deploy  copy the /exec URL.
 // Leave empty to disable sheet write-back (the rest of the app still works).
 export const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyKyHrPntHRosB-_DGBeP2QE4YtX2l8IoiVoYJRsZw8DNHiVcPiKUBsWkTHnml4smhn/exec";
+
+// Shared secret sent on every POST so the Apps Script can ignore unauthenticated
+// callers. Must match the SHARED_SECRET constant in setup_sheet.gs.
+// IMPORTANT: keep your GitHub repo private if this string is committed; rotate
+// the secret if the repo ever goes public. Anyone with this value can write to
+// your sheet via the Web App.
+export const APPS_SCRIPT_SECRET = "neh-far-2026-rotate-me-q9s7v3kl";
 export const SCAN_BASE = location.origin.includes("github.io")
   ? `${location.origin}${location.pathname.replace(/[^/]*$/, "")}scan.html?id=`
   : `${location.origin}${location.pathname.replace(/[^/]*$/, "")}scan.html?id=`;
@@ -101,5 +108,34 @@ export const DEFAULT_ENTITY_ID   = "NEH-U1";
 export const DEFAULT_ENTITY_CODE = "NEH-U1";
 
 const app = initializeApp(firebaseConfig);
+
+// ---- App Check (anti-abuse for the public scan surface) ------------------
+//
+// App Check protects scan_logs / scan_concerns from being spammed by anyone
+// who finds the QR URL. It's optional  the app works fine without it  but
+// recommended once you have a public deployment.
+//
+// To enable:
+//   1. Firebase Console > Project settings > App Check > Register the web app.
+//   2. Choose reCAPTCHA v3 (free tier) and copy the site key.
+//   3. Set RECAPTCHA_SITE_KEY below to that value.
+//   4. (Optional) Enforce App Check on Firestore once you've verified things work.
+//
+// Leave RECAPTCHA_SITE_KEY empty to skip activation. No-op if the SDK fails.
+const RECAPTCHA_SITE_KEY = "";
+if (RECAPTCHA_SITE_KEY) {
+  // Lazy-load to avoid blocking the rest of init when not configured.
+  import("https://www.gstatic.com/firebasejs/10.12.1/firebase-app-check.js")
+    .then(({ initializeAppCheck, ReCaptchaV3Provider }) => {
+      try {
+        initializeAppCheck(app, {
+          provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+          isTokenAutoRefreshEnabled: true,
+        });
+      } catch (e) { console.warn("[AppCheck] init failed:", e); }
+    })
+    .catch(e => console.warn("[AppCheck] SDK load failed:", e));
+}
+
 export const auth = getAuth(app);
 export const db   = getFirestore(app);

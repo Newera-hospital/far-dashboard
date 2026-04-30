@@ -14,7 +14,7 @@
  *  deployed exec URL in firebase-config.js as APPS_SCRIPT_URL.
  */
 
-import { SHEET_ID, SHEET_TABS, APPS_SCRIPT_URL } from "./firebase-config.js";
+import { SHEET_ID, SHEET_TABS, APPS_SCRIPT_URL, APPS_SCRIPT_SECRET } from "./firebase-config.js";
 
 // Maps whatever text is in the Asset_State column  internal enum value.
 // Handles both human-readable ("Active - Tagged") and raw enum ("active_tagged").
@@ -345,10 +345,15 @@ export async function postSheetJob(job) {
     return { ok: false, error: "APPS_SCRIPT_URL not configured" };
   }
   try {
+    // Inject the shared secret so the Apps Script can refuse unauthenticated
+     // posts. Don't overwrite a job-supplied secret if the caller already set one.
+    const payload = (job && typeof job === "object" && !job.secret)
+      ? { ...job, secret: APPS_SCRIPT_SECRET }
+      : job;
     const res = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(job),
+      body: JSON.stringify(payload),
       redirect: "follow",
     });
     if (!res.ok) {

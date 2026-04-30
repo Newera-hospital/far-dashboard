@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="far-build" content="2026-04-30"/>
 <title>New Era Hospital FAR System</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -887,7 +888,11 @@ window.sendLink = async function(){
   try {
     authFlowStarted = true;
     localStorage.removeItem(MANUAL_LOGOUT_KEY);
-    await sendSignInLinkToEmail(auth, email, { url: window.location.href, handleCodeInApp:true });
+    // Embed email in the redirect URL so opening the link on a different
+    // device/browser still works without prompting.
+    const continueUrl = new URL(window.location.href);
+    continueUrl.searchParams.set("e", email);
+    await sendSignInLinkToEmail(auth, email, { url: continueUrl.toString(), handleCodeInApp:true });
     localStorage.setItem("signInEmail", email);
     document.getElementById("otp-txt").innerHTML = ` Sign-in link sent to <strong>${email}</strong>.`;
     document.getElementById("otp-box").classList.add("show");
@@ -913,7 +918,9 @@ window.doSignOut = async function(){
 if (isSignInWithEmailLink(auth, location.href)) {
   authFlowStarted = true;
   localStorage.removeItem(MANUAL_LOGOUT_KEY);
-  const email = localStorage.getItem("signInEmail") || prompt("Confirm your email to complete sign-in:");
+  // Order: URL ?e= (works across devices)  localStorage (same browser)  prompt
+  const urlEmail = new URLSearchParams(location.search).get("e");
+  const email = urlEmail || localStorage.getItem("signInEmail") || prompt("Confirm your email to complete sign-in:");
   if (email) {
     signInWithEmailLink(auth, email, location.href)
       .then(async result => {
