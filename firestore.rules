@@ -1,0 +1,245 @@
+rules_version = '2';
+
+// New Era Hospital FAR  Firestore security rules.
+//
+// Audited against the actual code on 2026-04-26. Every collection mentioned
+// below is read or written somewhere in index.html / admin.html /
+// dashboard.html / scan.html / audit.js / asset_id.js. The sheet_write_queue
+// collection that previous rules permitted has been removed  the app no
+// longer queues sheet writes through Firestore, it POSTs them directly to
+// the Apps Script Web App (see NOTES.md).
+//
+// To deploy: copy this whole file into Firebase Console > Firestore Database
+// > Rules > Publish.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------- Helper functions ---------- */
+
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    // The signed-in user's profile doc. Used for role/active/entity checks.
+    function ud() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActive() {
+      return isLoggedIn() && ud().active == true;
+    }
+
+    function isGlobalAdmin() {
+      return isLoggedIn() && ud().role == 'global_admin' && isActive();
+    }
+
+    // global_admin or sub_admin, must be active. The two operator roles.
+    function canOperate() {
+      return isLoggedIn()
+        && ud().role in ['global_admin', 'sub_admin']
+        && isActive();
+    }
+
+    // True if the signed-in user is allowed to touch data scoped to the given
+    // entity (hospital unit). Global admins see everything; sub-admins only
+    // their own companyId or any entity listed in their entityIds[].
+    function belongsToEntity(entityId) {
+      let u = ud();
+      return isLoggedIn() && isActive() && (
+        u.role == 'global_admin' ||
+        u.companyId == entityId ||
+        ('entityIds' in u && u.entityIds.hasAny([entityId]))
+      );
+    }
+
+    // Email -> doc id used by user_invites and the placeholder users doc that
+    // an invite creates before first sign-in. Mirrors inviteIdFromEmail() in
+    // index.html.
+    function emailDocId(email) {
+      return email.lower().replace('[^a-z0-9]', '_');
+    }
+
+    function hasMatchingInvite() {
+      return isLoggedIn()
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/user_invites/$(emailDocId(request.auth.token.email)));
+    }
+
+    function myInvite() {
+      return get(/databases/$(database)/documents/user_invites/$(emailDocId(request.auth.token.email))).data;
+    }
+
+    // True if the doc being read/deleted belongs to the signed-in user (by
+    // email match). Used to let a freshly-signed-in user clean up their own
+    // pending invite + placeholder users doc.
+    function isMyInvite(resourceData) {
+      return isLoggedIn()
+        && request.auth.token.email_verified == true
+        && resourceData.email == request.auth.token.email;
+    }
+
+    /* ---------- Entity-scoped collections ---------- */
+
+    match /entities/{entityId} {
+      allow read: if canOperate();
+      allow create, update, delete: if isGlobalAdmin();
+    }
+
+    // Asset register. Asset IDs are immutable once allocated  the update
+    // rule blocks any attempt to change asset_id on an existing doc.
+    match /entities/{entityId}/assets/{assetId} {
+      allow read:   if belongsToEntity(entityId);
+      allow create: if canOperate() && belongsToEntity(entityId);
+      allow update: if canOperate() && belongsToEntity(entityId)
+                    && request.resource.data.asset_id == resource.data.asset_id;
+      allow delete: if isGlobalAdmin();
+    }
+
+    // Row-locks for sheet-row -> asset-id allocation. Append-only; never
+    // deleted (the lock is the source of truth that prevents double-allocation).
+    match /entities/{entityId}/asset_allocations/{docId} {
+      allow read, create, update: if canOperate() && belongsToEntity(entityId);
+      allow delete: if false;
+    }
+
+    // Per-entity settings (currently only "public_scan" doc).
+    match /entities/{entityId}/settings/{docId} {
+      allow read:           if belongsToEntity(entityId);
+      allow create, update: if canOperate() && belongsToEntity(entityId);
+      allow delete:         if isGlobalAdmin();
+    }
+
+    // Per-location Asset ID counters: seq_LOC_ICU, seq_LOC_OT, etc.
+    // Mutated only inside runTransaction() in asset_id.js.
+    match /entities/{entityId}/counters/{counterId} {
+      allow read, write: if canOperate() && belongsToEntity(entityId);
+    }
+
+    match /entities/{entityId}/qr_codes/{docId} {
+      allow read:           if belongsToEntity(entityId);
+      allow create, update: if canOperate() && belongsToEntity(entityId);
+      allow delete:         if isGlobalAdmin();
+    }
+
+    match /entities/{entityId}/reprint_requests/{docId} {
+      allow read:           if belongsToEntity(entityId);
+      allow create, update: if canOperate() && belongsToEntity(entityId);
+      allow delete:         if isGlobalAdmin();
+    }
+
+    match /entities/{entityId}/disposal_records/{docId} {
+      allow read:           if belongsToEntity(entityId);
+      allow create, update: if canOperate() && belongsToEntity(entityId);
+      allow delete:         if isGlobalAdmin();
+    }
+
+    match /entities/{entityId}/maintenance_tickets/{docId} {
+      allow read:           if belongsToEntity(entityId);
+      allow create, update: if canOperate() && belongsToEntity(entityId);
+      allow delete:         if isGlobalAdmin();
+    }
+
+    // Print job log. Operators can create; only admins can edit/delete after
+    // the fact (preserves the print history).
+    match /entities/{entityId}/print_jobs/{docId} {
+      allow read:           if belongsToEntity(entityId);
+      allow create:         if canOperate() && belongsToEntity(entityId);
+      allow update, delete: if isGlobalAdmin();
+    }
+
+    // Audit log. Append-only. No edits, no deletes  ever.
+    match /entities/{entityId}/audit_log/{docId} {
+      allow read:           if belongsToEntity(entityId);
+      allow create:         if canOperate() && belongsToEntity(entityId);
+      allow update, delete: if false;
+    }
+
+    /* ---------- User accounts & invites ---------- */
+
+    match /users/{userId} {
+      // Self-read or admin-read.
+      allow read: if isLoggedIn() && (request.auth.uid == userId || isGlobalAdmin());
+
+      // Two create paths:
+      //   1) Admin manually creates the placeholder users doc (admin.html invite flow).
+      //   2) On first sign-in, the user creates their own real users/{uid} doc,
+      //      provided a matching invite exists and the role/companyId match the invite.
+      allow create: if isGlobalAdmin()
+        || (
+          isLoggedIn()
+          && request.auth.uid == userId
+          && hasMatchingInvite()
+          && request.resource.data.email == request.auth.token.email
+          && request.resource.data.role == myInvite().role
+          && request.resource.data.companyId == myInvite().companyId
+          && request.resource.data.active == true
+        );
+
+      // Admin can update anything. Self can update non-privileged fields only
+      // (role/companyId/active/email/entityIds are locked).
+      allow update: if isGlobalAdmin()
+        || (
+          isLoggedIn() && request.auth.uid == userId
+          && request.resource.data.role      == resource.data.role
+          && request.resource.data.companyId == resource.data.companyId
+          && request.resource.data.active    == resource.data.active
+          && request.resource.data.email     == resource.data.email
+          && (!('entityIds' in resource.data)
+              || request.resource.data.entityIds == resource.data.entityIds)
+        );
+
+      // Admin can delete any user. A freshly-signed-in user can delete the
+      // placeholder users/{emailDocId} doc that was created by their invite.
+      allow delete: if isGlobalAdmin()
+        || (isLoggedIn() && isMyInvite(resource.data));
+    }
+
+    match /user_invites/{inviteId} {
+      // Admin sees all invites; a user can read/delete their own (during the
+      // first-sign-in claim flow in index.html).
+      allow read:           if isGlobalAdmin() || (isLoggedIn() && isMyInvite(resource.data));
+      allow create, update: if isGlobalAdmin();
+      allow delete:         if isGlobalAdmin() || (isLoggedIn() && isMyInvite(resource.data));
+    }
+
+    /* ---------- Public QR scan surface (scan.html) ---------- */
+
+    // Public read so anyone scanning a QR code can see asset info. Writes are
+    // restricted to operators; only admins can delete.
+    match /scan_data/{assetId} {
+      allow read:           if true;
+      allow create, update: if canOperate();
+      allow delete:         if isGlobalAdmin();
+    }
+
+    // Public can create scan event logs (anonymous scan tracking). Only
+    // operators can read; nobody can edit/delete.
+    match /scan_logs/{docId} {
+      allow create:         if true;
+      allow read:           if canOperate();
+      allow update, delete: if false;
+    }
+
+    // Public can submit a concern via the QR landing page. Operators can
+    // read and triage; updates are restricted to status/converted_by/
+    // converted_at fields only (matches the convert-to-ticket flow in
+    // dashboard.html). Never deleted.
+    match /scan_concerns/{docId} {
+      allow create: if true;
+      allow read:   if canOperate();
+      allow update: if canOperate()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['status', 'converted_by', 'converted_at']);
+      allow delete: if false;
+    }
+
+    /* ---------- Default deny ---------- */
+
+    // Anything not matched above is denied for everyone, including the old
+    // sheet_write_queue collection (now obsolete  see NOTES.md).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

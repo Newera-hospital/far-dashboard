@@ -1,0 +1,9 @@
+.claude/
+node_modules/
+.env
+.env.*
+*.zip
+*.bak
+*.tmp
+Thumbs.db
+.DS_Store

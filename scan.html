@@ -1,0 +1,584 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Asset Scan  New Era Hospital FAR</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --canvas:#F4F7F5;
+  --b-900:#052E16; --b-800:#064E3B; --b-700:#065F46; --b-600:#047857;
+  --b-500:#10B981; --b-400:#34D399; --b-100:#D1FAE5; --b-50:#ECFDF5;
+  --s-900:#0B1B14; --s-800:#1F2937; --s-700:#374151; --s-600:#4B5563;
+  --s-500:#6B7280; --s-400:#9CA3AF; --s-200:#E5E7EB; --s-100:#F3F4F6; --s-50:#F9FAFB;
+  --amber-700:#B45309; --amber-100:#FEF3C7; --amber-50:#FFFBEB;
+  --red-700:#B91C1C; --red-100:#FEE2E2; --red-50:#FEF2F2;
+  --blue-700:#1D4ED8; --blue-100:#DBEAFE;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --sh-md:0 2px 4px rgba(15,23,42,.04),0 6px 16px -6px rgba(15,23,42,.08);
+  --sh-xl:0 20px 60px -12px rgba(2,46,22,.18),0 8px 24px -8px rgba(15,23,42,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:
+    radial-gradient(circle at 80% -10%,rgba(16,185,129,.10),transparent 35%),
+    radial-gradient(circle at 0% 100%,rgba(5,46,22,.05),transparent 38%),
+    linear-gradient(180deg,#FBFEFC 0%,#EEF6F0 100%);
+  min-height:100vh;color:var(--s-900);
+  display:flex;flex-direction:column;align-items:center;
+  padding:0 0 40px;
+}
+
+/*  TOP HEADER  */
+.scan-header{
+  width:100%;
+  background:rgba(255,255,255,.85);
+  border-bottom:1px solid rgba(15,23,42,.06);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  display:flex;align-items:center;justify-content:center;
+  padding:16px 20px;gap:12px;
+  position:sticky;top:0;z-index:10;
+}
+.scan-logo{
+  width:118px;height:42px;border-radius:10px;
+  background:#fff;
+  border:1px solid rgba(15,23,42,.08);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:#fff;
+  box-shadow:0 8px 20px -10px rgba(15,23,42,.28);
+  position:relative;
+  overflow:hidden;
+  padding:6px 8px;
+}
+.scan-logo::after{content:'';position:absolute;inset:-3px;border-radius:15px;border:1px solid rgba(16,185,129,.22);}
+.scan-logo img{width:100%;height:100%;object-fit:contain;display:block;}
+.scan-plus{display:none;width:18px;height:18px;position:relative;}
+.scan-plus::before,.scan-plus::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:99px;}
+.scan-plus::before{width:18px;height:5px;}
+.scan-plus::after{width:5px;height:18px;}
+.scan-brand{color:var(--s-900);}
+.scan-brand .name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;letter-spacing:.2px;line-height:1.1;}
+.scan-brand .sub{font-size:9px;color:var(--b-700);font-weight:800;letter-spacing:1.4px;text-transform:uppercase;margin-top:3px;}
+
+/*  WRAPPER  */
+.wrap{width:100%;max-width:480px;padding:28px 16px 0;}
+
+/*  LOADING  */
+.loading{
+  display:flex;flex-direction:column;align-items:center;
+  gap:18px;padding:64px 20px;color:var(--s-500);font-weight:500;
+}
+.spinner{
+  width:46px;height:46px;border:3px solid var(--b-50);
+  border-top-color:var(--b-500);border-radius:50%;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/*  MAIN CARD  */
+.scan-card{
+  background:#fff;border-radius:24px;overflow:hidden;
+  border:1px solid rgba(15,23,42,.05);
+  box-shadow:var(--sh-xl);
+  animation:cardIn .55s var(--ease);
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+/* State banner  bold, gradient, calm */
+.state-banner{
+  display:flex;align-items:center;gap:14px;
+  padding:18px 22px;font-weight:700;font-size:14px;
+  letter-spacing:.3px;
+  border-bottom:1px solid rgba(15,23,42,.04);
+  position:relative;overflow:hidden;
+}
+.state-banner::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+}
+.state-banner.active{background:linear-gradient(135deg,#F0FDF4,#DCFCE7);color:var(--b-800);}
+.state-banner.active::after{background:linear-gradient(90deg,var(--b-500),var(--b-400));}
+.state-banner.disposed{background:linear-gradient(135deg,#FEF2F2,#FEE2E2);color:#7F1D1D;}
+.state-banner.disposed::after{background:linear-gradient(90deg,#B91C1C,#F87171);}
+.state-banner.maintenance{background:linear-gradient(135deg,#FFFBEB,#FEF3C7);color:#7C2D12;}
+.state-banner.maintenance::after{background:linear-gradient(90deg,#B45309,#F59E0B);}
+.state-banner.pending{background:linear-gradient(135deg,#EFF6FF,#DBEAFE);color:#1E3A8A;}
+.state-banner.pending::after{background:linear-gradient(90deg,#1D4ED8,#60A5FA);}
+.state-banner.error{background:linear-gradient(135deg,#F9FAFB,#F3F4F6);color:var(--s-700);}
+.state-banner.error::after{background:linear-gradient(90deg,var(--s-500),var(--s-300));}
+.state-icon{
+  width:38px;height:38px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:12px;font-weight:900;letter-spacing:.5px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
+}
+.state-icon svg{width:18px;height:18px;}
+.state-banner.active .state-icon{background:#BBF7D0;}
+.state-banner.disposed .state-icon{background:#FECACA;}
+.state-banner.maintenance .state-icon{background:#FDE68A;}
+.state-banner.pending .state-icon{background:#BFDBFE;}
+.state-banner.error .state-icon{background:var(--s-200);}
+
+/* Asset ID strip */
+.asset-id-strip{
+  background:
+    linear-gradient(180deg,#FBFEFC 0%,var(--b-50) 100%);
+  color:var(--b-800);
+  font-family:'JetBrains Mono','Courier New',monospace;font-size:18px;font-weight:700;
+  padding:14px 22px;letter-spacing:.5px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  border-bottom:1px solid var(--b-100);
+  position:relative;
+}
+.asset-id-strip .copy-btn{
+  background:#fff;border:1.5px solid var(--b-100);color:var(--b-700);
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:800;
+  padding:6px 12px;border-radius:8px;letter-spacing:.7px;
+  cursor:pointer;transition:all .2s var(--ease);
+  text-transform:uppercase;
+}
+.asset-id-strip .copy-btn:hover{background:var(--b-50);border-color:var(--b-400);transform:translateY(-1px);}
+
+/* Asset info body */
+.asset-info{padding:24px 22px;}
+.asset-name{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--s-900);margin-bottom:8px;line-height:1.25;letter-spacing:-.4px;}
+.asset-dept{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--b-50);color:var(--b-700);
+  font-size:11px;font-weight:800;padding:5px 12px;border-radius:99px;
+  margin-bottom:18px;border:1px solid var(--b-100);letter-spacing:.4px;
+  text-transform:uppercase;
+}
+
+.info-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border:1px solid var(--s-200);border-radius:14px;overflow:hidden;
+  margin-bottom:16px;background:var(--s-50);
+}
+.info-cell{padding:14px 16px;border-bottom:1px solid var(--s-100);background:#fff;}
+.info-cell:nth-last-child(-n+2){border-bottom:none;}
+.info-cell:nth-child(odd){border-right:1px solid var(--s-100);}
+.info-cell .ic-label{font-size:9px;font-weight:800;color:var(--s-400);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.info-cell .ic-val{font-size:13px;font-weight:600;color:var(--s-800);line-height:1.4;}
+.info-cell.full{grid-column:1/-1;}
+
+/* Disposal box */
+.disposal-box{
+  background:linear-gradient(135deg,var(--red-50),#FEE2E2);
+  border:1.5px solid #FECACA;
+  border-radius:14px;padding:16px 18px;margin-bottom:16px;
+  position:relative;overflow:hidden;
+}
+.disposal-box::before{
+  content:'';position:absolute;top:0;left:0;width:4px;height:100%;
+  background:linear-gradient(180deg,#B91C1C,#F87171);
+}
+.disposal-box .db-title{font-size:13px;font-weight:800;color:#7F1D1D;margin-bottom:6px;display:flex;align-items:center;gap:6px;letter-spacing:.2px;}
+.disposal-box .db-msg{font-size:13px;color:#7F1D1D;line-height:1.55;}
+.disposal-box .db-meta{font-size:11px;color:#B91C1C;margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;font-weight:600;}
+
+/* Maintenance box */
+.maint-box{
+  background:linear-gradient(135deg,var(--amber-50),var(--amber-100));
+  border:1.5px solid #FDE68A;
+  border-radius:14px;padding:16px 18px;margin-bottom:16px;
+  position:relative;overflow:hidden;
+}
+.maint-box::before{
+  content:'';position:absolute;top:0;left:0;width:4px;height:100%;
+  background:linear-gradient(180deg,#B45309,#F59E0B);
+}
+.maint-box .mb-title{font-size:13px;font-weight:800;color:#7C2D12;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.maint-box .mb-msg{font-size:13px;color:#78350F;line-height:1.55;}
+
+/* QR valid badge */
+.qr-valid{
+  background:linear-gradient(135deg,var(--b-50),#F0FDF4);
+  border:1.5px solid var(--b-100);
+  border-radius:12px;padding:13px 16px;margin-bottom:16px;
+  display:flex;align-items:center;gap:11px;font-size:12.5px;color:var(--b-800);font-weight:600;
+  position:relative;overflow:hidden;
+}
+.qr-valid::before{
+  content:'';position:absolute;top:0;left:0;width:3px;height:100%;
+  background:linear-gradient(180deg,var(--b-500),var(--b-400));
+}
+
+/* FAR basis note */
+.far-basis{
+  margin:14px 0 4px;
+  background:linear-gradient(135deg,#FBFEFC,var(--s-50));
+  border:1px solid var(--s-200);
+  border-radius:12px;
+  padding:12px 14px;
+  display:flex;gap:10px;align-items:flex-start;
+  color:var(--s-600);
+  font-size:11.5px;line-height:1.55;font-weight:500;
+}
+.far-basis svg{width:15px;height:15px;color:var(--b-700);flex-shrink:0;margin-top:2px;}
+.far-basis strong{display:block;color:var(--s-800);font-size:10px;letter-spacing:.8px;text-transform:uppercase;margin-bottom:2px;}
+
+/* Not found / error */
+.error-card{padding:48px 24px;text-align:center;}
+.error-card .ec-icon{
+  width:64px;height:64px;border-radius:18px;margin:0 auto 18px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--red-50);color:var(--red-700);border:1px solid var(--red-100);
+  box-shadow:var(--sh-md);
+}
+.error-card .ec-icon svg{width:30px;height:30px;}
+.error-card h2{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--s-900);margin-bottom:10px;letter-spacing:-.3px;}
+.error-card p{font-size:13.5px;color:var(--s-500);line-height:1.7;}
+.error-card .ec-id{
+  font-family:'JetBrains Mono','Courier New',monospace;
+  font-size:13px;font-weight:700;color:var(--b-700);
+  background:var(--b-50);padding:6px 14px;border-radius:8px;
+  display:inline-block;margin-top:14px;border:1px solid var(--b-100);
+  letter-spacing:.5px;
+}
+
+/* Footer */
+.scan-footer{
+  text-align:center;margin-top:24px;
+  font-size:11px;color:var(--s-400);line-height:1.7;font-weight:500;
+}
+.scan-footer strong{color:var(--s-600);font-weight:700;}
+.scan-ts{
+  text-align:center;font-size:10.5px;color:var(--s-400);
+  margin-top:14px;font-family:'JetBrains Mono','Courier New',monospace;
+  letter-spacing:.3px;
+}
+
+/* Report concern link */
+.report-link{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  text-align:center;margin-top:16px;
+  font-size:12.5px;color:var(--b-700);text-decoration:none;
+  font-weight:700;letter-spacing:.2px;
+  padding:10px 18px;
+  background:#fff;border:1.5px solid var(--b-100);
+  border-radius:99px;width:fit-content;margin-left:auto;margin-right:auto;
+  transition:all .25s var(--ease);
+  box-shadow:var(--sh-md);
+}
+.report-link:hover{color:var(--b-800);border-color:var(--b-400);transform:translateY(-1px);}
+.report-panel{
+  display:none;margin:14px auto 0;background:#fff;border:1px solid var(--b-100);
+  border-radius:18px;padding:16px;box-shadow:var(--sh-md);animation:cardIn .35s var(--ease);
+}
+.report-panel.open{display:block;}
+.report-title{font-size:13px;font-weight:800;color:var(--s-900);margin-bottom:4px;}
+.report-help{font-size:12px;color:var(--s-500);line-height:1.5;margin-bottom:12px;}
+.report-field{width:100%;border:1.5px solid var(--s-200);border-radius:12px;padding:11px 12px;font:600 13px 'Inter',sans-serif;color:var(--s-800);outline:none;background:#fff;transition:.2s var(--ease);}
+.report-field:focus{border-color:var(--b-400);box-shadow:0 0 0 4px rgba(16,185,129,.12);}
+textarea.report-field{min-height:92px;resize:vertical;line-height:1.5;}
+.report-actions{display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px;}
+.report-btn{
+  border:none;border-radius:12px;padding:10px 14px;font:800 12px 'Inter',sans-serif;
+  cursor:pointer;transition:.2s var(--ease);
+}
+.report-btn.primary{background:linear-gradient(135deg,var(--b-800),var(--b-600));color:#fff;box-shadow:0 10px 20px -12px rgba(5,46,22,.5);}
+.report-btn.ghost{background:var(--s-50);color:var(--s-600);border:1px solid var(--s-200);}
+.report-btn:disabled{opacity:.58;cursor:not-allowed;}
+.report-status{font-size:12px;font-weight:700;margin-top:10px;line-height:1.5;color:var(--s-500);}
+.report-status.ok{color:var(--b-700);}
+.report-status.err{color:var(--red-700);}
+
+@media(max-width:520px){
+  .asset-id-strip{font-size:16px;padding:13px 18px;}
+  .asset-id-strip .copy-btn{width:100%;justify-content:center;}
+  .info-grid{grid-template-columns:1fr;}
+  .info-cell:nth-child(odd){border-right:none;}
+  .info-cell:nth-last-child(-n+2){border-bottom:1px solid var(--s-100);}
+  .info-cell:last-child{border-bottom:none;}
+  .asset-name{font-size:21px;}
+  .asset-info{padding:20px 18px;}
+}
+</style>
+</head>
+<body>
+
+<header class="scan-header">
+  <div class="scan-logo"><img src="NewERA logo.png" alt="NewEra Hospitals logo"></div>
+  <div class="scan-brand">
+    <div class="name">New Era Hospital Group</div>
+    <div class="sub">Fixed Asset Register - QR Scan</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- LOADING -->
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <div>Looking up asset</div>
+  </div>
+
+  <!-- MAIN CARD (injected by JS) -->
+  <div class="scan-card" id="scanCard" style="display:none;"></div>
+
+  <div class="scan-ts" id="scanTs"></div>
+  <button type="button" class="report-link" onclick="toggleReportPanel()" id="reportLink" style="display:none;">
+     Report a concern about this asset
+  </button>
+  <div class="report-panel" id="reportPanel">
+    <div class="report-title">Report Asset Concern</div>
+    <div class="report-help">Use this for damaged QR labels, wrong location, missing asset, or equipment condition issues.</div>
+    <textarea class="report-field" id="concernMsg" maxlength="600" placeholder="Describe the concern clearly"></textarea>
+    <div style="height:9px;"></div>
+    <input class="report-field" id="concernContact" maxlength="120" placeholder="Optional: name / phone / department"/>
+    <div class="report-actions">
+      <button type="button" class="report-btn ghost" onclick="toggleReportPanel(false)">Cancel</button>
+      <button type="button" class="report-btn primary" id="concernSubmit" onclick="reportConcern()">Submit Report</button>
+    </div>
+    <div class="report-status" id="concernStatus"></div>
+  </div>
+</div>
+
+<footer class="scan-footer" style="margin-top:28px;">
+  <strong>New Era Hospital FAR System</strong><br/>
+  Powered by Fixed Asset Register Governance Platform
+</footer>
+
+<script type="module">
+import { db } from "./firebase-config.js";
+import { doc, onSnapshot, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
+
+//  Main 
+const params  = new URLSearchParams(location.search);
+const assetId = (params.get('id') || '').trim();
+let reportInFlight = false;
+const CONCERN_THROTTLE_MS = 2 * 60 * 1000;
+
+document.getElementById('scanTs').textContent = 'Scanned at: ' + new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true });
+
+if (!assetId) {
+  showError('No Asset ID', 'This QR code does not contain a valid Asset ID. Please contact hospital administration.', '');
+} else {
+  loadAsset(assetId);
+  logScan(assetId).catch(()=>{});   // fire-and-forget scan logging
+}
+
+async function loadAsset(id) {
+  onSnapshot(doc(db, 'scan_data', id), snap => {
+    if (!snap.exists()) {
+      showError('Asset Not Found', 'This Asset ID is not registered in the Fixed Asset Register, or the QR has not been issued yet. If you believe this is an error, contact the hospital administration.', id);
+      return;
+    }
+    render({ assetId: id, ...snap.data() });
+  }, e => {
+    showError('Cannot Verify', 'Unable to verify this asset right now. Please try again in a moment, or contact hospital administration. (' + (e.message||e) + ')', id);
+  });
+}
+
+async function logScan(id) {
+  // Scan events land in a public-appendable collection. Rules should allow
+  // create-only (no read/update/delete) for unauthenticated users.
+  try {
+    await addDoc(collection(db, 'scan_logs'), {
+      asset_id:   id,
+      scanned_at: serverTimestamp(),
+      user_agent: navigator.userAgent || '',
+      referrer:   document.referrer || '',
+    });
+  } catch { /* non-blocking */ }
+}
+
+function render(data) {
+  document.getElementById('loadingState').style.display = 'none';
+  const card = document.getElementById('scanCard');
+  card.style.display = 'block';
+  document.getElementById('reportLink').style.display = data.allow_public_reports === false ? 'none' : 'flex';
+
+  const state = (data.state || '').toLowerCase().replace(/\s*[-]\s*/g, '_').replace(/\s+/g, '_');
+  const publicState = (data.public_scan_state || '').toLowerCase();
+  const isDisposed =
+    ['disposed','written_off','destroyed','transferred_out','blocked'].includes(state) ||
+    ['show_disposed','show_written_off','show_destroyed','disabled'].includes(publicState);
+  const isMaintenance = state === 'under_maintenance' || state.includes('maintenance');
+  const isTagged = (state === 'active_tagged' || state.includes('tagged')) && !isDisposed;
+
+  const bannerIcons = {
+    disposed: `<svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.3 4.2L2.7 18a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 4.2a2 2 0 00-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
+    maintenance: `<svg fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.7-3.7a6 6 0 01-7.9 7.9l-6.9 6.9a2.1 2.1 0 01-3-3l6.9-6.9a6 6 0 017.9-7.9l-3.7 3.7z"/></svg>`,
+    active: `<svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`,
+    pending: `<svg fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h6v6h-6z"/></svg>`,
+  };
+
+  let bannerClass = 'pending', bannerIcon = bannerIcons.pending, bannerText = '';
+  if (isDisposed)      { bannerClass='disposed'; bannerIcon=bannerIcons.disposed; bannerText='ASSET DISPOSED / DECOMMISSIONED'; }
+  else if (isMaintenance){ bannerClass='maintenance'; bannerIcon=bannerIcons.maintenance; bannerText='UNDER MAINTENANCE'; }
+  else if (isTagged)   { bannerClass='active'; bannerIcon=bannerIcons.active; bannerText='ACTIVE - VERIFIED ASSET'; }
+  else                 { bannerClass='pending'; bannerIcon=bannerIcons.pending; bannerText='ASSET REGISTERED'; }
+
+  const visible = data.visible_fields || ['description','department','category','put_to_use'];
+
+  const fields = [
+    { key:'department', label:'Department', val:data.department },
+    { key:'category', label:'Category', val:data.category },
+    { key:'put_to_use', label:'Put to Use Date', val:data.put_to_use },
+    { key:'invoice', label:'Invoice No.', val:data.invoice },
+    { key:'location', label:'Location', val:data.location },
+    { key:'custodian', label:'Custodian', val:data.custodian },
+    { key:'remarks', label:'Remarks', val:data.remarks },
+  ].filter(f => visible.includes(f.key) && f.val);
+
+  // Build info grid rows (pairs)
+  let gridHtml = '';
+  for (let i = 0; i < fields.length; i += 2) {
+    const a = fields[i];
+    const b = fields[i+1];
+    if (b) {
+      gridHtml += `<div class="info-cell"><div class="ic-label">${a.label}</div><div class="ic-val">${a.val}</div></div>`;
+      gridHtml += `<div class="info-cell"><div class="ic-label">${b.label}</div><div class="ic-val">${b.val}</div></div>`;
+    } else {
+      gridHtml += `<div class="info-cell full"><div class="ic-label">${a.label}</div><div class="ic-val">${a.val}</div></div>`;
+    }
+  }
+
+  const disposalHtml = isDisposed ? `
+    <div class="disposal-box">
+      <div class="db-title">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Official Disposal Notice
+      </div>
+      <div class="db-msg">${data.public_message || 'This asset has been officially disposed and is no longer in service.'}</div>
+      ${data.disposal_date || data.disposal_type ? `<div class="db-meta">
+        ${data.disposal_type ? `<span>Type: <strong>${data.disposal_type}</strong></span>` : ''}
+        ${data.disposal_date ? `<span>Effective: <strong>${data.disposal_date}</strong></span>` : ''}
+      </div>` : ''}
+    </div>` : '';
+
+  const maintHtml = isMaintenance ? `
+    <div class="maint-box">
+      <div class="mb-title">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Under Maintenance
+      </div>
+      <div class="mb-msg">${data.maintenance_message || 'This asset is currently under scheduled maintenance and is temporarily out of service.'}</div>
+    </div>` : '';
+
+  const qrValidHtml = isTagged ? `
+    <div class="qr-valid">
+      <svg width="16" height="16" fill="none" stroke="#166534" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      QR code is valid and registered in the FAR system
+    </div>` : '';
+
+  card.innerHTML = `
+    <div class="state-banner ${bannerClass}">
+      <div class="state-icon">${bannerIcon}</div>
+      <div>${bannerText}</div>
+    </div>
+    <div class="asset-id-strip">
+      <span>${data.assetId || assetId}</span>
+      <button class="copy-btn" onclick="copyId('${data.assetId || assetId}')">COPY ID</button>
+    </div>
+    <div class="asset-info">
+      <div class="asset-name">${visible.includes('description') ? (data.description || 'Registered Hospital Asset') : 'Registered Hospital Asset'}</div>
+      ${visible.includes('department') && data.department ? `<div class="asset-dept">
+        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        ${data.department}
+      </div>` : ''}
+      ${disposalHtml}
+      ${maintHtml}
+      ${qrValidHtml}
+      ${gridHtml ? `<div class="info-grid">${gridHtml}</div>` : ''}
+      <div class="far-basis">
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>
+        </svg>
+        <div>
+          <strong>FAR basis</strong>
+          Details shown are based on the asset list finalised by management for inclusion in the Fixed Asset Register as at 31-Mar-2026. Reconciliation with the books of account may be required.
+        </div>
+      </div>
+      <div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:8px;">
+        For queries, contact hospital administration
+      </div>
+    </div>`;
+}
+
+function showError(title, msg, id) {
+  document.getElementById('loadingState').style.display = 'none';
+  const card = document.getElementById('scanCard');
+  card.style.display = 'block';
+  card.innerHTML = `
+    <div class="error-card">
+      <div class="ec-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10.3 4.2L2.7 18a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 4.2a2 2 0 00-3.4 0z"/>
+          <path d="M12 9v4"/><path d="M12 17h.01"/>
+        </svg>
+      </div>
+      <h2>${title}</h2>
+      <p>${msg}</p>
+      ${id ? `<div class="ec-id">${id}</div>` : ''}
+    </div>`;
+}
+
+window.copyId = (id) => {
+  navigator.clipboard.writeText(id).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    if (btn) { btn.textContent = 'COPIED!'; setTimeout(() => btn.textContent = 'COPY ID', 2000); }
+  });
+};
+
+window.toggleReportPanel = (force) => {
+  const panel = document.getElementById('reportPanel');
+  const open = typeof force === 'boolean' ? force : !panel.classList.contains('open');
+  panel.classList.toggle('open', open);
+  if (open) setTimeout(() => document.getElementById('concernMsg')?.focus(), 60);
+};
+
+function setConcernStatus(message, type = '') {
+  const el = document.getElementById('concernStatus');
+  el.textContent = message || '';
+  el.className = `report-status ${type}`;
+}
+
+window.reportConcern = async () => {
+  if (reportInFlight) return;
+  const msg = document.getElementById('concernMsg').value.trim();
+  const contact = document.getElementById('concernContact').value.trim();
+  if (msg.length < 5) {
+    setConcernStatus('Please describe the concern in at least 5 characters.', 'err');
+    return;
+  }
+  const throttleKey = `far:concern:${assetId}`;
+  const last = Number(localStorage.getItem(throttleKey) || 0);
+  if (Date.now() - last < CONCERN_THROTTLE_MS) {
+    setConcernStatus('A report was already submitted for this asset recently. Please wait a moment before sending another.', 'err');
+    return;
+  }
+  try {
+    reportInFlight = true;
+    const btn = document.getElementById('concernSubmit');
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitting'; }
+    setConcernStatus('Submitting report...', '');
+    await addDoc(collection(db, 'scan_concerns'), {
+      asset_id:    assetId,
+      message:     msg,
+      contact:     contact,
+      reported_at: serverTimestamp(),
+      user_agent:  navigator.userAgent || '',
+      status:      'new',
+      created_day: new Date().toISOString().slice(0, 10),
+    });
+    localStorage.setItem(throttleKey, String(Date.now()));
+    document.getElementById('concernMsg').value = '';
+    document.getElementById('concernContact').value = '';
+    setConcernStatus('Report logged. Hospital administration will review it.', 'ok');
+  } catch (e) {
+    setConcernStatus('Could not submit right now: ' + (e.message||e), 'err');
+  } finally {
+    reportInFlight = false;
+    const btn = document.getElementById('concernSubmit');
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit Report'; }
+  }
+};
+</script>
+</body>
+</html>
+
