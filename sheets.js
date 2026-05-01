@@ -329,7 +329,9 @@ export async function fetchAuditLog() {
  *
  * Job shape (matches what the Apps Script doPost handler expects):
  *   { tab, op: "append_row", values: [...] }
- *   { tab, op: "cell_update", cell: "Q42", value: "NEH-U1-BM-000001" }
+ *   { tab, op: "cell_update", cell: "Q42", value: "NEH-U1-ICU-BME-0001" }
+ *   { tab, op: "batch_cell_update", updates: [{ cell, value }, ...] }
+ *   { tab, op: "batch_append_rows", rows: [[...], [...]] }
  *
  * Uses Content-Type: text/plain to dodge the CORS preflight (Apps Script does
  * not reply to OPTIONS); Apps Script still receives the JSON body via
@@ -346,7 +348,7 @@ export async function postSheetJob(job) {
   }
   try {
     // Inject the shared secret so the Apps Script can refuse unauthenticated
-     // posts. Don't overwrite a job-supplied secret if the caller already set one.
+    // posts. Don't overwrite a job-supplied secret if the caller already set one.
     const payload = (job && typeof job === "object" && !job.secret)
       ? { ...job, secret: APPS_SCRIPT_SECRET }
       : job;

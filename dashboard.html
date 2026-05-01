@@ -352,14 +352,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var
 .bc span{color:var(--s3);}
 
 /*  STAT CARDS  */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:18px;margin-bottom:30px;}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;margin-bottom:30px;}
 .sc{
   background:#fff;border-radius:var(--radius);padding:22px 20px;
   border:1px solid var(--s2);position:relative;overflow:hidden;
   box-shadow:var(--shadow-sm);cursor:default;
   transition:all .35s var(--ease);
 }
-.sc:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--s100);}
+.sc:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--g3);}
 .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;}
 .sc.green::before{background:linear-gradient(90deg,var(--g6),var(--g5),var(--g4));}
 .sc.gold::before{background:linear-gradient(90deg,var(--a6),var(--a5),#F59E0B);}
@@ -391,9 +391,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var
 .sc.purple .sc-icon{background:var(--p1);}
 .sc.teal .sc-icon{background:#CCFBF1;}
 .sc-val{
-  font-family:'Cormorant Garamond',serif;
-  font-size:36px;font-weight:700;color:var(--s9);
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:32px;font-weight:850;color:var(--s9);
   line-height:1;margin-bottom:6px;letter-spacing:-.5px;
+  font-variant-numeric:tabular-nums;
 }
 .sc-lbl{font-size:11px;font-weight:700;color:var(--s5);text-transform:uppercase;letter-spacing:.6px;}
 .sc-bg{display:none;}
@@ -439,6 +440,15 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var
   content:'';width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;
   border-radius:50%;animation:spin .7s linear infinite;margin-left:4px;
 }
+.inline-status{
+  min-height:18px;margin-top:10px;
+  font-size:11.5px;font-weight:700;color:var(--s5);
+  letter-spacing:.1px;
+}
+.inline-status.ok{color:var(--g7);}
+.inline-status.er{color:var(--r6);}
+.inline-status.wa{color:var(--a6);}
+.inline-status.in{color:var(--b6);}
 .btn-g{
   background:linear-gradient(135deg,var(--g8),var(--g6));color:#fff;
   box-shadow:0 4px 14px -4px rgba(5,46,22,.4),inset 0 1px 0 rgba(255,255,255,.14);
@@ -479,7 +489,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var
 .tw::-webkit-scrollbar-track{background:var(--s0);}
 .tw::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px;}
 .tw::-webkit-scrollbar-thumb:hover{background:var(--s4);}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px;}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;min-width:600px;}
 .asset-table{min-width:1680px;}
 thead{background:linear-gradient(180deg,#fff 0%,var(--s0) 100%);}
 thead th{
@@ -488,12 +498,13 @@ thead th{
   letter-spacing:.7px;text-transform:uppercase;
   white-space:nowrap;border-bottom:1px solid var(--s2);
 }
-tbody tr{border-bottom:1px solid var(--s1);transition:background .15s var(--ease);}
-tbody tr:last-child{border-bottom:none;}
+tbody tr{transition:background .15s var(--ease);}
 tbody tr:hover{background:linear-gradient(90deg,var(--g0),transparent);}
-tbody td{padding:13px 16px;color:var(--s7);vertical-align:middle;max-width:200px;}
+tbody td{padding:13px 16px;color:var(--s7);vertical-align:middle;max-width:200px;border-bottom:1px solid var(--s1);}
+tbody tr:last-child td{border-bottom:none;}
 td.td-sm{min-width:80px;white-space:nowrap;}
 td.td-actions{white-space:nowrap;min-width:100px;}
+.td-actions .btn-group{justify-content:flex-start;gap:6px;}
 td.td-wide{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 td.td-url{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .mono{font-family:'JetBrains Mono','Courier New',monospace;font-size:12px;font-weight:700;color:var(--g7);white-space:nowrap;letter-spacing:.2px;}
@@ -1416,8 +1427,9 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
   <div class="bc">Assets</div>
   <div class="ph">
     <div class="ph-l"><div class="pt">Asset Register</div><div class="ps">All assets synced from Google Sheet</div></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;flex-direction:column;">
       <button class="btn btn-am btn-sm" id="allocAllBtn" style="display:none;" onclick="allocateAllPending()">Allocate Pending IDs</button>
+      <div class="inline-status" id="allocBulkStatus" aria-live="polite"></div>
     </div>
   </div>
   <div class="fb asset-filters">
@@ -1502,11 +1514,14 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
   <div class="bc"><span>QR</span><span></span><span>Pending</span></div>
   <div class="ph">
     <div class="ph-l"><div class="pt">QR Code Queue</div><div class="ps">Assets awaiting QR generation &amp; approval</div></div>
-    <div style="display:flex;gap:8px;" id="bulkBar">
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-direction:column;" id="bulkBar">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
       <button class="btn btn-out btn-sm" onclick="selAll()">Select All</button>
       <button class="btn btn-g btn-sm" id="bulkBtn" style="display:none;" onclick="bulkApproveQr()">
         Approve &amp; Generate (<span id="selCnt">0</span>)
       </button>
+      </div>
+      <div class="inline-status" id="qrBulkStatus" aria-live="polite"></div>
     </div>
   </div>
   <div class="qr-grid" id="qrGrid"></div>
@@ -1678,12 +1693,12 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
       <div class="print-label layout-compact">
         <div class="pl-band"><span class="pl-mark">NEH</span><span class="pl-title">Fixed Asset Digital Tag</span><span class="pl-unit">NEH-U1</span></div>
         <div class="pl-qr-wrap"><div class="sample-qr"></div></div>
-        <div class="pl-id">NEH-U1-ICU-001</div>
+        <div class="pl-id">NEH-U1-ICU-BME-0001</div>
       </div>
       <div class="print-label layout-standard">
         <div class="pl-band"><span class="pl-mark">NEH</span><span class="pl-title">Fixed Asset Digital Tag</span><span class="pl-unit">NEH-U1</span></div>
         <div class="pl-qr-wrap"><div class="sample-qr"></div></div>
-        <div class="pl-id">NEH-U1-ICU-014</div>
+        <div class="pl-id">NEH-U1-ICU-IT-0014</div>
         <div class="pl-desc">Ventilator Pro X</div>
         <div class="pl-sub">ICU</div>
         <div class="pl-meta-row"><span class="pl-pill">NEH-U1</span><span class="pl-pill">BioMedical</span></div>
@@ -1691,7 +1706,7 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
       <div class="print-label layout-location">
         <div class="pl-band"><span class="pl-mark">NEH</span><span class="pl-title">Equipment Digital Asset Tag</span><span class="pl-unit">NEH-U1</span></div>
         <div class="pl-qr-wrap"><div class="sample-qr"></div></div>
-        <div><div class="pl-id">NEH-U1-OT-022</div><div class="pl-desc">Operation Theatre Monitor</div><div class="pl-sub">OT Complex</div><div class="pl-meta-row"><span class="pl-pill">NEH-U1</span><span class="pl-pill">BioMedical</span></div></div>
+        <div><div class="pl-id">NEH-U1-OT-BME-0022</div><div class="pl-desc">Operation Theatre Monitor</div><div class="pl-sub">OT Complex</div><div class="pl-meta-row"><span class="pl-pill">NEH-U1</span><span class="pl-pill">BioMedical</span></div></div>
       </div>
     </div>
   </div>
@@ -1777,7 +1792,7 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
   </div>
   <div class="fb">
     <div class="si-wrap"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="auSearch" placeholder="Search user, asset ID, action" oninput="filterAudit()"/></div>
-    <select class="fsel" id="auFilter" onchange="filterAudit()"><option value="">All Actions</option><option>Asset ID Allocated</option><option>Sheet Sync</option><option>QR Generated</option><option>QR Printed</option><option>Reprint Requested</option><option>Reprint Approved</option><option>Reprint Rejected</option><option>Disposal Recorded</option><option>Maintenance Raised</option><option>Maintenance Started</option><option>Maintenance Resolved</option><option>Scan Visibility Updated</option><option>Public Scan Policy Applied</option><option>Public Report Converted</option></select>
+    <select class="fsel" id="auFilter" onchange="filterAudit()"><option value="">All Actions</option><option>Asset ID Allocated</option><option>Asset IDs Bulk Allocated</option><option>Sheet Sync</option><option>QR Generated</option><option>QR Bulk Generated</option><option>QR Printed</option><option>Reprint Requested</option><option>Reprint Approved</option><option>Reprint Rejected</option><option>Disposal Recorded</option><option>Maintenance Raised</option><option>Maintenance Started</option><option>Maintenance Resolved</option><option>Scan Visibility Updated</option><option>Public Scan Policy Applied</option><option>Public Report Converted</option></select>
     <select class="fsel" id="auRange" onchange="filterAudit()" title="Limit to recent activity">
       <option value="">All time</option>
       <option value="1">Last 24 hours</option>
@@ -1824,7 +1839,7 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
         <div class="guide-step-n">2</div>
         <div class="guide-step-body">
           <div class="gs-title">Allocate Asset IDs</div>
-          <div class="gs-text">Open <strong>Asset Register</strong>, find pending rows, and click <strong>Allocate ID</strong>. IDs follow <code>NEH-U1-ICU-001</code>: hospital, unit, location, and sequence. The ID writes back to column Q of the Sheet.</div>
+          <div class="gs-text">Open <strong>Asset Register</strong>, find pending rows, and click <strong>Allocate ID</strong>. IDs follow <code>NEH-U1-ICU-BME-0001</code>: hospital, unit, location, custodian, and sequence. The ID writes back to column Q of the Sheet.</div>
         </div>
       </div>
       <div class="guide-step">
@@ -1907,7 +1922,7 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
   <div class="md">
     <div class="mh"><div class="mt">New Reprint Request</div><button class="mx" onclick="closeMo('mo-rp')">x</button></div>
     <div class="mb">
-      <div class="fg"><label class="fl">Asset ID *</label><input class="fi" id="rpAid" placeholder="e.g. NEH-U1-ICU-001"/></div>
+      <div class="fg"><label class="fl">Asset ID *</label><input class="fi" id="rpAid" placeholder="e.g. NEH-U1-ICU-BME-0001"/></div>
       <div class="fr">
         <div class="fg"><label class="fl">Requested By *</label><input class="fi" id="rpBy" placeholder="Your full name"/></div>
         <div class="fg"><label class="fl">Copies Needed</label><input class="fi" type="number" id="rpCopies" value="1" min="1" max="10"/></div>
@@ -1936,7 +1951,7 @@ select.fsel:focus{border-color:var(--g5);box-shadow:var(--ring);}
         The QR code will remain active but show a public disposal notice on scan.
       </div>
       <div class="fr">
-        <div class="fg"><label class="fl">Asset ID *</label><input class="fi" id="dpAid" placeholder="NEH-U1-ICU-001"/></div>
+        <div class="fg"><label class="fl">Asset ID *</label><input class="fi" id="dpAid" placeholder="NEH-U1-ICU-BME-0001"/></div>
         <div class="fg"><label class="fl">Asset Name *</label><input class="fi" id="dpName" placeholder="Asset description"/></div>
       </div>
       <div class="fr">
@@ -2092,6 +2107,7 @@ async function singleFlight(key, task, { busyText, button } = {}) {
   if (btn) {
     btn.disabled = true;
     btn.classList.add('busy');
+    btn.setAttribute('aria-busy', 'true');
     if (busyText) btn.innerHTML = busyText;
   }
   try {
@@ -2101,9 +2117,33 @@ async function singleFlight(key, task, { busyText, button } = {}) {
     if (btn) {
       btn.disabled = false;
       btn.classList.remove('busy');
+      btn.removeAttribute('aria-busy');
       btn.innerHTML = originalHtml;
     }
   }
+}
+
+function setInlineStatus(id, message = '', kind = 'in') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove('ok', 'er', 'wa', 'in');
+  if (message) el.classList.add(kind);
+}
+
+async function runInChunks(items, size, worker, onProgress) {
+  const results = [];
+  let done = 0;
+  for (let i = 0; i < items.length; i += size) {
+    const chunk = items.slice(i, i + size);
+    const settled = await Promise.allSettled(chunk.map(worker));
+    settled.forEach(result => {
+      done++;
+      results.push(result);
+      if (onProgress) onProgress(done, items.length, result);
+    });
+  }
+  return results;
 }
 
 function normalizeVisibleFields(fields) {
@@ -2116,7 +2156,9 @@ function normalizeVisibleFields(fields) {
 
 const CUSTODIAN_LABEL_BY_CODE = Object.freeze({
   IT: "IT",
+  BME: "BioMedical",
   BM: "BioMedical",
+  MA: "Maintenance",
   MT: "Maintenance",
 });
 
@@ -2125,8 +2167,8 @@ function normalizeCustodian(value) {
   if (!raw) return "";
   const compact = raw.toLowerCase().replace(/[^a-z]/g, "");
   if (compact === "it" || compact === "informationtechnology") return "IT";
-  if (compact === "biomedical" || compact === "biomed" || compact === "bm") return "BioMedical";
-  if (compact === "maintenance" || compact === "mt") return "Maintenance";
+  if (compact === "biomedical" || compact === "biomed" || compact === "bme" || compact === "bm") return "BioMedical";
+  if (compact === "maintenance" || compact === "maint" || compact === "ma" || compact === "mt") return "Maintenance";
   return "";
 }
 
@@ -2813,39 +2855,103 @@ window.allocatePending = async (sheetRow) => {
 
 window.allocateAllPending = async () => {
   return singleFlight('allocate:all', async () => {
-  const pendingRows = STATE.assets.filter(a => a.pending);
-  if (!pendingRows.length) return toast('No pending Asset IDs to allocate', 'in');
+    setInlineStatus('allocBulkStatus', '', 'in');
+    const pendingRows = STATE.assets.filter(a => a.pending);
+    if (!pendingRows.length) return toast('No pending Asset IDs to allocate', 'in');
 
-  let allocated = 0;
-  let skipped = 0;
-  for (const row of pendingRows) {
-    const custodian = inferCustodian(row);
-    if (!custodian) { skipped++; continue; }
-    try {
+    const jobs = [];
+    let skipped = 0;
+    for (const row of pendingRows) {
+      const custodian = inferCustodian(row);
+      if (!custodian) { skipped++; continue; }
+      jobs.push({ row, custodian });
+    }
+    if (!jobs.length) {
+      setInlineStatus('allocBulkStatus', `${skipped} row(s) need Custodian_Department before ID allocation.`, 'er');
+      return toast('Fill Custodian_Department in the sheet.', 'er');
+    }
+
+    setInlineStatus('allocBulkStatus', `Allocating 0 of ${jobs.length} Asset IDs...`, 'in');
+    const results = await runInChunks(jobs, 5, async ({ row, custodian }) => {
       const newId = await allocateAssetId({
         entityId: U.cid || DEFAULT_ENTITY_ID,
         entityCode: U.cid || DEFAULT_ENTITY_CODE,
         location: row.dept || row.location,
         custodian,
         row,
+        mirrorSheet: false,
       });
-      await pushAudit({ action: 'Asset ID Allocated', aid: newId, detail: `Sheet row ${row.sheet_row}; Location: ${row.dept || row.location || ''}; Custodian: ${custodian}; ${row.desc || 'Asset'}` });
+      return { row, custodian, newId };
+    }, (done, total) => {
+      setInlineStatus('allocBulkStatus', `Allocating ${done} of ${total} Asset IDs...`, 'in');
+    });
+
+    const updates = [];
+    const allocatedIds = [];
+    let failed = 0;
+    results.forEach(result => {
+      if (result.status !== 'fulfilled') {
+        console.warn('[allocateAllPending]', result.reason);
+        failed++;
+        return;
+      }
+      const { row, custodian, newId } = result.value;
       row.id = newId;
       row.pending = false;
       row.custodian = custodian;
       row.state = 'active_untagged';
       row.qr = 'pending';
-      allocated++;
-    } catch (e) {
-      console.warn('[allocateAllPending]', row.sheet_row, e);
-      skipped++;
-    }
-  }
+      updates.push({ cell: `Q${row.sheet_row}`, value: newId });
+      allocatedIds.push(newId);
+    });
 
-  renderAll();
-  if (allocated && !skipped) toast(`Allocated ${allocated} Asset ID(s)`, 'ok');
-  else if (allocated && skipped) toast(`Allocated ${allocated}. Skipped ${skipped} row(s) needing custody data.`, 'wa');
-  else toast('No rows could be allocated. Fill Custodian_Department in the sheet.', 'er');
+    if (updates.length) {
+      setInlineStatus('allocBulkStatus', `Writing ${updates.length} IDs back to Google Sheet...`, 'in');
+      const sheetResult = await postSheetJob({
+        tab: "Invoice_Asset_Intake",
+        op: "batch_cell_update",
+        updates,
+        meta: { kind: "Bulk Asset ID Allocation", count: updates.length, entity_id: U.cid || DEFAULT_ENTITY_ID },
+      });
+      if (!sheetResult?.ok) {
+        console.warn('[allocateAllPending batch sheet mirror]', sheetResult);
+        setInlineStatus('allocBulkStatus', `Batch Sheet write unavailable. Falling back to row-by-row write...`, 'wa');
+        let fallbackFail = 0;
+        for (const u of updates) {
+          const r = await postSheetJob({
+            tab: "Invoice_Asset_Intake",
+            op: "cell_update",
+            cell: u.cell,
+            value: u.value,
+            meta: { kind: "Asset ID Allocation Fallback", aid: u.value, entity_id: U.cid || DEFAULT_ENTITY_ID },
+          });
+          if (!r?.ok) fallbackFail++;
+        }
+        skipped += fallbackFail;
+      }
+    }
+
+    if (allocatedIds.length) {
+      await pushAudit({
+        action: 'Asset IDs Bulk Allocated',
+        targetType: 'asset_batch',
+        targetId: `${allocatedIds.length} assets`,
+        detail: `Allocated ${allocatedIds.length} Asset IDs: ${allocatedIds.slice(0, 25).join(', ')}${allocatedIds.length > 25 ? '...' : ''}`,
+      });
+    }
+
+    renderAll();
+    const totalSkipped = skipped + failed;
+    if (allocatedIds.length && !totalSkipped) {
+      setInlineStatus('allocBulkStatus', `Done. ${allocatedIds.length} IDs allocated and written to Sheet.`, 'ok');
+      toast(`Allocated ${allocatedIds.length} Asset ID(s)`, 'ok');
+    } else if (allocatedIds.length) {
+      setInlineStatus('allocBulkStatus', `Done with warnings. ${allocatedIds.length} allocated, ${totalSkipped} skipped/failed.`, 'wa');
+      toast(`Allocated ${allocatedIds.length}. ${totalSkipped} skipped/failed.`, 'wa');
+    } else {
+      setInlineStatus('allocBulkStatus', `No IDs allocated. ${totalSkipped || skipped} row(s) need review.`, 'er');
+      toast('No rows could be allocated. Check custodian/location data.', 'er');
+    }
   }, { button: document.getElementById('allocAllBtn'), busyText:'Allocating IDs...' });
 };
 
@@ -2994,7 +3100,11 @@ window.openQrMo = (id) => {
   openMo('mo-qr');
 };
 
-async function issueQrForAsset(assetId, copies = 1, { suppressToast = false } = {}) {
+function qrRegisterSheetRow(assetId, copies, generatedBy) {
+  return [assetId, SCAN_BASE + assetId, new Date().toISOString(), generatedBy, "issued", "0", "", "", generatedBy, String(copies), "", "show_active", ""];
+}
+
+async function issueQrForAsset(assetId, copies = 1, { suppressToast = false, skipSheet = false, skipAudit = false, trustPending = false } = {}) {
   if (!assetId) throw new Error('No asset selected');
   if (!U.cid) throw new Error('No entity scope');
 
@@ -3004,18 +3114,21 @@ async function issueQrForAsset(assetId, copies = 1, { suppressToast = false } = 
     return false;
   }
   const qrRef = doc(db, "entities", U.cid, "qr_codes", assetId);
-  const existingQr = await getDoc(qrRef);
-  const existingStatus = String(existingQr.data()?.status || '').toLowerCase();
-  if (existingQr.exists() && ['issued','printed','generated'].includes(existingStatus)) {
-    if (a) a.qr = existingStatus === 'printed' ? 'printed' : 'issued';
-    if (!suppressToast) toast(`${assetId} is already generated`, 'in');
-    return false;
+  if (!trustPending) {
+    const existingQr = await getDoc(qrRef);
+    const existingStatus = String(existingQr.data()?.status || '').toLowerCase();
+    if (existingQr.exists() && ['issued','printed','generated'].includes(existingStatus)) {
+      if (a) a.qr = existingStatus === 'printed' ? 'printed' : 'issued';
+      if (!suppressToast) toast(`${assetId} is already generated`, 'in');
+      return false;
+    }
   }
   const generatedBy = U.email || U.name;
   const today = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
   const scanPolicy = STATE.scanSettings || {};
 
-  await setDoc(qrRef, {
+  await Promise.all([
+  setDoc(qrRef, {
     asset_id:         assetId,
     qr_url:           SCAN_BASE + assetId,
     status:           "issued",
@@ -3023,9 +3136,9 @@ async function issueQrForAsset(assetId, copies = 1, { suppressToast = false } = 
     generated_on:     serverTimestamp(),
     generated_by:     generatedBy,
     reprint_count:    0,
-  }, { merge: true });
+  }, { merge: true }),
 
-  await setDoc(doc(db, "entities", U.cid, "assets", assetId), {
+  setDoc(doc(db, "entities", U.cid, "assets", assetId), {
     asset_id:         assetId,
     qr_url:           SCAN_BASE + assetId,
     qr_status:        "issued",
@@ -3033,9 +3146,9 @@ async function issueQrForAsset(assetId, copies = 1, { suppressToast = false } = 
     qr_generated_by:  generatedBy,
     reprint_count:    0,
     state:            "active_tagged",
-  }, { merge: true });
+  }, { merge: true }),
 
-  await setDoc(doc(db, "scan_data", assetId), {
+  setDoc(doc(db, "scan_data", assetId), {
     assetId:           assetId,
     description:       a?.desc || "",
     department:        a?.dept || "",
@@ -3049,15 +3162,19 @@ async function issueQrForAsset(assetId, copies = 1, { suppressToast = false } = 
     public_scan_state: "show_active",
     visible_fields:    normalizeVisibleFields(scanPolicy.visible_fields),
     allow_public_reports: scanPolicy.allow_public_reports !== false,
-  }, { merge: true });
+  }, { merge: true }),
+  ]);
 
-  await pushAudit({ action:'QR Generated', aid:assetId, detail:`Copies: ${copies}, By: ${generatedBy}` });
-  await postSheetJob({
-    tab: "QR_Control_Register",
-    op:  "append_row",
-    values: [assetId, SCAN_BASE + assetId, new Date().toISOString(), generatedBy, "issued", "0", "", "", generatedBy, String(copies), "", "show_active", ""],
-    meta: { kind: "QR Generated", aid: assetId },
-  });
+  const sheetRow = qrRegisterSheetRow(assetId, copies, generatedBy);
+  if (!skipAudit) await pushAudit({ action:'QR Generated', aid:assetId, detail:`Copies: ${copies}, By: ${generatedBy}` });
+  if (!skipSheet) {
+    await postSheetJob({
+      tab: "QR_Control_Register",
+      op:  "append_row",
+      values: sheetRow,
+      meta: { kind: "QR Generated", aid: assetId },
+    });
+  }
 
   if (a) {
     a.qr = 'issued';
@@ -3069,7 +3186,7 @@ async function issueQrForAsset(assetId, copies = 1, { suppressToast = false } = 
   }
   selIds.delete(assetId);
   if (!suppressToast) toast(`QR generated for ${assetId}  ${copies} label(s)`, 'ok');
-  return true;
+  return { assetId, sheetRow };
 }
 
 function populatePrintFilters() {
@@ -3099,25 +3216,82 @@ async function fetchPublicConcerns() {
 
 window.bulkApproveQr = async () => {
   return singleFlight('qr:bulk', async () => {
-  const ids = [...selIds].filter(Boolean);
-  if (!ids.length) return toast('Select at least one asset', 'in');
+    setInlineStatus('qrBulkStatus', '', 'in');
+    const ids = [...selIds].filter(id => {
+      const a = STATE.assets.find(x => x.id === id);
+      return a && a.qr === 'pending' && !a.pending;
+    });
+    if (!ids.length) return toast('Select at least one pending asset', 'in');
 
-  let done = 0;
-  let failed = 0;
-  for (const id of ids) {
-    try {
-      const changed = await issueQrForAsset(id, 2, { suppressToast: true });
-      if (changed) done++;
-    } catch (e) {
-      console.warn('[bulkApproveQr]', id, e);
-      failed++;
+    setInlineStatus('qrBulkStatus', `Generating 0 of ${ids.length} QR codes...`, 'in');
+    const results = await runInChunks(ids, 10, async (id) => {
+      return issueQrForAsset(id, 2, {
+        suppressToast: true,
+        skipSheet: true,
+        skipAudit: true,
+      });
+    }, (done, total) => {
+      setInlineStatus('qrBulkStatus', `Generating ${done} of ${total} QR codes...`, 'in');
+    });
+
+    const sheetRows = [];
+    const generatedIds = [];
+    let failed = 0;
+    results.forEach(result => {
+      if (result.status !== 'fulfilled' || !result.value) {
+        failed++;
+        console.warn('[bulkApproveQr]', result.reason || result.value);
+        return;
+      }
+      generatedIds.push(result.value.assetId);
+      sheetRows.push(result.value.sheetRow);
+    });
+
+    if (sheetRows.length) {
+      setInlineStatus('qrBulkStatus', `Writing ${sheetRows.length} QR rows to Google Sheet...`, 'in');
+      const sheetResult = await postSheetJob({
+        tab: "QR_Control_Register",
+        op: "batch_append_rows",
+        rows: sheetRows,
+        meta: { kind: "Bulk QR Generated", count: sheetRows.length, entity_id: U.cid || DEFAULT_ENTITY_ID },
+      });
+      if (!sheetResult?.ok) {
+        console.warn('[bulkApproveQr batch sheet mirror]', sheetResult);
+        setInlineStatus('qrBulkStatus', `Batch Sheet write unavailable. Falling back to row-by-row write...`, 'wa');
+        let fallbackFail = 0;
+        for (const row of sheetRows) {
+          const r = await postSheetJob({
+            tab: "QR_Control_Register",
+            op: "append_row",
+            values: row,
+            meta: { kind: "QR Generated Fallback", aid: row[0], entity_id: U.cid || DEFAULT_ENTITY_ID },
+          });
+          if (!r?.ok) fallbackFail++;
+        }
+        failed += fallbackFail;
+      }
     }
-  }
 
-  renderAll();
-  if (done && !failed) toast(`Generated ${done} QR code(s)`, 'ok');
-  else if (done && failed) toast(`Generated ${done}. Failed ${failed}.`, 'wa');
-  else toast('Could not generate selected QR codes', 'er');
+    if (generatedIds.length) {
+      await pushAudit({
+        action: 'QR Bulk Generated',
+        targetType: 'qr_batch',
+        targetId: `${generatedIds.length} assets`,
+        detail: `Generated ${generatedIds.length} QR codes: ${generatedIds.slice(0, 25).join(', ')}${generatedIds.length > 25 ? '...' : ''}`,
+      });
+    }
+
+    renderAll();
+    if (generatedIds.length && !failed) {
+      setInlineStatus('qrBulkStatus', `Done. ${generatedIds.length} QR codes generated.`, 'ok');
+      toast(`Generated ${generatedIds.length} QR code(s)`, 'ok');
+    } else if (generatedIds.length) {
+      setInlineStatus('qrBulkStatus', `Done with warnings. ${generatedIds.length} generated, ${failed} failed/sheet mirror warning.`, 'wa');
+      toast(`Generated ${generatedIds.length}. ${failed} failed/warning.`, 'wa');
+    } else {
+      setInlineStatus('qrBulkStatus', `No QR codes generated. ${failed || ids.length} item(s) need review.`, 'er');
+      toast('Could not generate selected QR codes', 'er');
+    }
   }, { button: document.getElementById('bulkBtn'), busyText:'Generating...' });
 };
 window.confirmQr = async () => {
@@ -4422,7 +4596,7 @@ mq.addEventListener('change', fixGrid); fixGrid();
 window.addEventListener('resize', () => { if(window.innerWidth>=768){ document.getElementById('sidebar').classList.remove('mob-open'); document.getElementById('overlay').classList.remove('on'); } });
 
 //  GUIDE OVERLAY  (?Help button + auto-show on first visit)
-const GUIDE_SEEN_KEY = 'far:guideSeen:v2';
+const GUIDE_SEEN_KEY = 'far:guideSeen:v3';
 window.openGuide = () => {
   const el = document.getElementById('guideMo'); if (!el) return;
   el.classList.add('on');

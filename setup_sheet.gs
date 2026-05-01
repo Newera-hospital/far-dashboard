@@ -41,7 +41,15 @@ const SHARED_SECRET = "neh-far-2026-rotate-me-q9s7v3kl";
  *
  *   Update one cell:
  *     { "tab": "Invoice_Asset_Intake", "op": "cell_update",
- *       "cell": "Q42", "value": "NEH-U1-ICU-001", "meta": {...} }
+ *       "cell": "Q42", "value": "NEH-U1-ICU-BME-0001", "meta": {...} }
+ *
+ *   Update many cells in one web call:
+ *     { "tab": "Invoice_Asset_Intake", "op": "batch_cell_update",
+ *       "updates": [{"cell":"Q42","value":"NEH-U1-ICU-BME-0001"}], "meta": {...} }
+ *
+ *   Append many rows in one web call:
+ *     { "tab": "QR_Control_Register", "op": "batch_append_rows",
+ *       "rows": [[...], [...]], "meta": {...} }
  *
  * The website POSTs with Content-Type: text/plain to avoid CORS preflight
  * (Apps Script Web Apps don't reply to OPTIONS). The body is still JSON; we
@@ -81,12 +89,43 @@ function doPost(e) {
       return jsonOut_({ ok: true, op: op, tab: tab, cell: job.cell });
     }
 
+    if (op === "batch_cell_update") {
+      const updates = Array.isArray(job.updates) ? job.updates : [];
+      if (!updates.length) return jsonOut_({ ok: false, error: "batch_cell_update requires non-empty 'updates'" });
+      updates.forEach(function (u) {
+        if (!u || !u.cell) return;
+        const value = (u.value === null || u.value === undefined) ? "" : u.value;
+        sh.getRange(String(u.cell)).setValue(value);
+      });
+      SpreadsheetApp.flush();
+      return jsonOut_({ ok: true, op: op, tab: tab, count: updates.length });
+    }
+
     if (op === "append_row") {
       const values = Array.isArray(job.values) ? job.values.map(coerceCell_) : [];
       if (!values.length) return jsonOut_({ ok: false, error: "append_row requires non-empty 'values'" });
       sh.appendRow(values);
       SpreadsheetApp.flush();
       return jsonOut_({ ok: true, op: op, tab: tab, count: values.length });
+    }
+
+    if (op === "batch_append_rows") {
+      const rows = Array.isArray(job.rows) ? job.rows : [];
+      if (!rows.length) return jsonOut_({ ok: false, error: "batch_append_rows requires non-empty 'rows'" });
+      const cleanRows = rows
+        .filter(function (row) { return Array.isArray(row) && row.length; })
+        .map(function (row) { return row.map(coerceCell_); });
+      if (!cleanRows.length) return jsonOut_({ ok: false, error: "batch_append_rows received no valid rows" });
+
+      const width = cleanRows.reduce(function (max, row) { return Math.max(max, row.length); }, 0);
+      const padded = cleanRows.map(function (row) {
+        const copy = row.slice();
+        while (copy.length < width) copy.push("");
+        return copy;
+      });
+      sh.getRange(sh.getLastRow() + 1, 1, padded.length, width).setValues(padded);
+      SpreadsheetApp.flush();
+      return jsonOut_({ ok: true, op: op, tab: tab, count: padded.length });
     }
 
     return jsonOut_({ ok: false, error: "unsupported op: " + op });

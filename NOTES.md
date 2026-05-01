@@ -99,26 +99,27 @@ Do not move column `Q`. `asset_id.js` writes generated IDs to column `Q`.
 
 Current Asset ID format:
 
-`NEH-U1-ICU-001`
+`NEH-U1-ICU-BME-0001`
 
 Meaning:
 
 - `NEH` = New Era Hospital group, always.
 - `U1`, `U2`, etc. = hospital unit.
 - `ICU`, `OT`, `RAD`, etc. = location/department code.
-- `001` = sequence number for that unit and location.
+- `BME`, `IT`, `MA` = custodian initials for BioMedical, IT, or Maintenance.
+- `0001` = sequence number for that unit, location, and custodian series.
 
 Examples:
 
-- `NEH-U1-ICU-001`
-- `NEH-U1-OT-001`
-- `NEH-U2-RAD-001`
+- `NEH-U1-ICU-BME-0001`
+- `NEH-U1-OT-BME-0001`
+- `NEH-U2-RAD-IT-0001`
 
 Current allocator:
 
 - File: `asset_id.js`
 - Function: `allocateAssetId(...)`
-- Counter path example: `entities/NEH-U1/counters/seq_LOC_ICU`
+- Counter path example: `entities/NEH-U1/counters/seq_LOC_ICU_CUST_BME`
 - Row lock path example: `entities/NEH-U1/asset_allocations/sheet_row_42`
 
 Why row locks exist:
@@ -150,7 +151,20 @@ Write job examples:
   "tab": "Invoice_Asset_Intake",
   "op": "cell_update",
   "cell": "Q42",
-  "value": "NEH-U1-ICU-001"
+  "value": "NEH-U1-ICU-BME-0001"
+}
+```
+
+Bulk write example used for fast ID allocation:
+
+```json
+{
+  "tab": "Invoice_Asset_Intake",
+  "op": "batch_cell_update",
+  "updates": [
+    { "cell": "Q42", "value": "NEH-U1-ICU-BME-0001" },
+    { "cell": "Q43", "value": "NEH-U1-ICU-IT-0001" }
+  ]
 }
 ```
 
@@ -241,7 +255,7 @@ File:
 
 Current guide version key:
 
-`far:guideSeen:v2`
+`far:guideSeen:v3`
 
 Why this matters:
 
@@ -252,7 +266,7 @@ Why this matters:
 Current guidebook covers:
 
 - Syncing Google Sheet rows
-- Allocating Asset IDs like `NEH-U1-ICU-001`
+- Allocating Asset IDs like `NEH-U1-ICU-BME-0001`
 - Generating QR codes
 - Printing label formats and sizes
 - Public scan visibility controls
@@ -403,7 +417,7 @@ required Firestore rule changes — all were code-only or documentation.
 ### Code changes shipped
 | Item | Where | What |
 |---|---|---|
-| **A1** Asset ID sequence width | `asset_id.js` | `SEQ_DIGITS` bumped from 3 to 4 (e.g. `NEH-U1-ICU-0001`). Old 3-digit IDs coexist; the counter naturally pads to 4 going forward. |
+| **A1** Asset ID sequence format | `asset_id.js` | IDs now include location and custodian code with 4-digit sequence, e.g. `NEH-U1-ICU-BME-0001`. Old IDs coexist; new counters are per location+custodian. |
 | **A2** Re-push Asset IDs to Sheet | `dashboard.html` (Sync section) | New "Re-push Asset IDs" button walks Firestore-known assets and re-fires `cell_update` jobs for column Q. Idempotent. Throttled at 250ms/job to stay under Apps Script quota. |
 | **B1** Email link cross-device | `index.html` | Sign-in link now embeds `?e=<email>` so opening the link on a different device skips the email-confirmation prompt. |
 | **B2 + B3** Invite expiry + resend | `admin.html` | New invites carry `expiresAt` (+30 days). Users tab shows "Pending — expires in Xd" / "Expired Yd ago". A **Resend Invite** action refreshes the expiry. Audited as `Invite Resent`. |
@@ -419,6 +433,7 @@ required Firestore rule changes — all were code-only or documentation.
 | **E3** Past-useful-life report | `dashboard.html` Reports | Computes expiry as `put_to_use + useful_life_years` and lists assets past that date. CSV export. |
 | **F1** Idle session expiry | already present | `startInactivityWatch()` runs every 30s and force-signs-out at 15 min idle. Verified, no change. |
 | **F2** Apps Script shared secret | `firebase-config.js` + `sheets.js` + `setup_sheet.gs` | `postSheetJob()` now injects `secret` from `APPS_SCRIPT_SECRET` into every payload. The Apps Script `doPost(e)` rejects requests whose `secret` doesn't match the in-script `SHARED_SECRET` constant. **You must redeploy the Apps Script** for this to take effect (see below). |
+| **F3** Batch Sheet writes | `setup_sheet.gs` + `dashboard.html` | Bulk Asset ID allocation uses `batch_cell_update`; bulk QR generation uses `batch_append_rows`. This avoids one Apps Script web call per row. **Redeploy Apps Script** after uploading this code. |
 | **G1** Build version | all 4 HTML files + dashboard avatar dropdown | `<meta name="far-build">` per page; dashboard shows the value at the bottom of the user dropdown. Useful when triaging "what version was this?" |
 | **A4** App Check SDK stub | `firebase-config.js` | Conditional App Check init: if `RECAPTCHA_SITE_KEY` is set, lazy-loads the App Check SDK and registers reCAPTCHA v3. Empty by default = no-op. See "External setup needed" below. |
 
