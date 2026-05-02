@@ -404,6 +404,48 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var
 }
 .sc-lbl{font-size:11px;font-weight:700;color:var(--s5);text-transform:uppercase;letter-spacing:.6px;}
 .sc-bg{display:none;}
+.report-stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
+  gap:16px;
+  margin-bottom:22px;
+}
+.report-stat{
+  min-height:138px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.report-stat .sc-val{
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:normal;
+  line-height:1.06;
+  font-size:clamp(26px,2.25vw,34px);
+}
+.report-stat.value-card{
+  grid-column:span 2;
+  min-width:0;
+}
+.report-money{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  flex-wrap:wrap;
+  max-width:100%;
+}
+.report-money .currency{
+  font-size:clamp(22px,1.9vw,30px);
+  font-weight:900;
+  color:var(--s9);
+}
+.report-money .amount{
+  font-size:clamp(25px,2.35vw,36px);
+  font-weight:900;
+  color:var(--s9);
+  line-height:1.02;
+  overflow-wrap:anywhere;
+}
 
 /*  CARDS  */
 .card{
@@ -1281,6 +1323,7 @@ tr.audit-fresh{animation:auditFresh 1.5s var(--ease);}
   .stats{grid-template-columns:repeat(2,1fr);gap:12px;}
   .sc{padding:18px 16px;}
   .sc-val{font-size:28px;}
+  .report-stat.value-card{grid-column:span 1;}
   .qr-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
   .ph{flex-direction:column;align-items:flex-start;gap:12px;}
   .ph > div:last-child{flex-wrap:wrap;gap:6px;}
@@ -1313,6 +1356,11 @@ tr.audit-fresh{animation:auditFresh 1.5s var(--ease);}
   .sc-val{font-size:24px;}
   .sc-lbl{font-size:10px;}
   .sc-icon{width:40px;height:40px;}
+  .report-stats{grid-template-columns:1fr 1fr;gap:12px;}
+  .report-stat{min-height:118px;padding:16px 14px;}
+  .report-stat .sc-val{font-size:24px;}
+  .report-money .currency{font-size:20px;}
+  .report-money .amount{font-size:24px;}
   .main{padding:16px 12px;}
   .ph-l .pt{font-size:24px;}
   .card{border-radius:12px;}
@@ -4540,10 +4588,11 @@ function reportQuickStats(assets, disposal, reprints) {
   const pending   = assets.filter(a => a.qr === 'pending' || a.pending).length;
   const disposedCount = (disposal || []).length;
   const reprintsPending = (reprints || []).filter(r => (r.status||'').toLowerCase().includes('pending')).length;
-  const stat = (val,lbl,cls) => `<div class="sc ${cls}"><div class="sc-val">${val}</div><div class="sc-lbl">${lbl}</div></div>`;
-  return `<div class="stats" style="margin-bottom:22px;">
+  const stat = (val,lbl,cls,extra='') => `<div class="sc report-stat ${cls} ${extra}"><div class="sc-val">${val}</div><div class="sc-lbl">${lbl}</div></div>`;
+  const money = `<div class="report-money"><span class="currency">Rs.</span><span class="amount">${inr(totalValue)}</span></div>`;
+  return `<div class="report-stats">
     ${stat(totalCount, 'Total Assets', 'green')}
-    ${stat('Rs. ' + inr(totalValue), 'Total Purchase Value', 'green')}
+    ${stat(money, 'Total Purchase Value', 'green', 'value-card')}
     ${stat(tagged, 'QR Tagged', 'blue')}
     ${stat(pending, 'QR Pending', 'gold')}
     ${stat(disposedCount, 'Disposed Records', 'red')}
