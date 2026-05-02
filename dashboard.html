@@ -534,6 +534,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--canvas);color:var
 
 /*  TABLES  */
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0 0 var(--radius) var(--radius);}
+.tw.sticky-head{max-height:68vh;overflow:auto;}
 .tw::-webkit-scrollbar{height:6px;}
 .tw::-webkit-scrollbar-track{background:var(--s0);}
 .tw::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px;}
@@ -546,6 +547,7 @@ thead th{
   font-size:10px;font-weight:800;color:var(--s5);
   letter-spacing:.7px;text-transform:uppercase;
   white-space:nowrap;border-bottom:1px solid var(--s2);
+  position:sticky;top:0;z-index:2;background:linear-gradient(180deg,#fff 0%,var(--s0) 100%);
 }
 tbody tr{transition:background .15s var(--ease);}
 tbody tr:hover{background:linear-gradient(90deg,var(--g0),transparent);}
@@ -558,6 +560,44 @@ td.td-wide{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:no
 td.td-url{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .mono{font-family:'JetBrains Mono','Courier New',monospace;font-size:12px;font-weight:700;color:var(--g7);white-space:nowrap;letter-spacing:.2px;}
 .empty-row td{text-align:center;padding:48px;color:var(--s4);font-size:13px;min-width:unset;max-width:unset;font-style:italic;}
+
+.column-menu{position:relative;}
+.column-pop{
+  position:absolute;right:0;top:calc(100% + 8px);z-index:20;
+  display:none;width:250px;max-height:330px;overflow:auto;
+  background:#fff;border:1px solid var(--s2);border-radius:12px;
+  box-shadow:var(--shadow-xl);padding:10px;
+}
+.column-pop.on{display:grid;gap:7px;animation:fadeDown .18s var(--ease);}
+.column-pop label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--s7);padding:7px 8px;border-radius:8px;cursor:pointer;}
+.column-pop label:hover{background:var(--g0);color:var(--g7);}
+.column-pop input{accent-color:var(--g6);}
+.help-tip{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:17px;height:17px;border-radius:50%;margin-left:5px;
+  background:var(--g0);color:var(--g7);border:1px solid var(--g1);
+  font-size:10px;font-weight:900;cursor:help;vertical-align:middle;
+}
+.help-tip:hover{box-shadow:0 0 0 4px rgba(16,185,129,.12);}
+.action-list{display:grid;gap:9px;}
+.action-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--s2);border-radius:11px;background:#fff;text-align:left;cursor:pointer;transition:.18s var(--ease);}
+.action-row:hover{transform:translateY(-1px);border-color:var(--g2);box-shadow:var(--shadow-sm);}
+.action-row strong{font-size:12px;color:var(--s8);}
+.action-row span{font-size:11px;color:var(--s5);display:block;margin-top:2px;}
+.action-num{font-family:'JetBrains Mono',monospace;font-weight:900;color:var(--g7);background:var(--g0);border:1px solid var(--g1);border-radius:999px;padding:4px 9px;min-width:32px;text-align:center;}
+.recon-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.recon-item{border:1px solid var(--s2);border-radius:11px;padding:10px 11px;background:#fff;}
+.recon-v{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:900;color:var(--s9);}
+.recon-l{font-size:10px;font-weight:800;color:var(--s5);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
+.recon-item.warn{border-color:#FDE68A;background:#FFFBEB;}
+.recon-item.warn .recon-v{color:var(--a6);}
+.section-tip{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 16px;padding:12px 14px;border:1px solid var(--g1);background:linear-gradient(135deg,var(--g0),#fff);border-radius:12px;color:var(--g7);font-size:12px;font-weight:700;line-height:1.5;}
+.section-tip button{border:none;background:#fff;color:var(--g7);border:1px solid var(--g1);border-radius:999px;padding:5px 10px;font-size:11px;font-weight:900;cursor:pointer;}
+.table-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.save-view-note{font-size:10px;font-weight:800;color:var(--s4);text-transform:uppercase;letter-spacing:.5px;}
+.saved-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:var(--g0);color:var(--g7);border:1px solid var(--g1);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.4px;}
+.metric-ok{color:var(--g7)!important;}
+.metric-warn{color:var(--a6)!important;}
 
 /*  PILLS  */
 .pill{
@@ -1251,6 +1291,18 @@ tr.audit-fresh{animation:auditFresh 1.5s var(--ease);}
   .si-wrap{min-width:unset;width:100%;}
   .fsel{width:100%;}
   table{min-width:520px;}
+  .asset-table{min-width:0;border-spacing:0;}
+  .asset-table thead{display:none;}
+  .asset-table tbody,.asset-table tr,.asset-table td{display:block;width:100%;}
+  .asset-table tr{border-bottom:1px solid var(--s2);padding:12px 14px;background:#fff;}
+  .asset-table td{display:grid;grid-template-columns:118px minmax(0,1fr);gap:10px;padding:8px 0;border-bottom:0;max-width:none;white-space:normal;}
+  .asset-table td::before{content:attr(data-label);font-size:10px;font-weight:900;color:var(--s4);text-transform:uppercase;letter-spacing:.6px;}
+  .asset-table td.td-wide,.asset-table td.td-url{max-width:none;white-space:normal;}
+  .asset-table .btn-group{justify-content:flex-start;}
+  .column-pop{position:fixed;left:14px;right:14px;top:auto;bottom:18px;width:auto;max-height:55vh;}
+  .recon-grid{grid-template-columns:1fr;}
+  .table-tools{justify-content:flex-start;width:100%;}
+  .table-tools .btn{flex:1 1 135px;justify-content:center;}
   .mo{padding:12px;}
   .md{max-height:95vh;border-radius:16px;}
   .mh,.mb,.mf{padding:18px 20px;}
@@ -1493,6 +1545,14 @@ tr.audit-fresh{animation:auditFresh 1.5s var(--ease);}
           <div style="margin-top:10px;font-size:11px;color:var(--s4);" id="syncCount"></div>
         </div>
       </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">Action Required</div><div class="cs">Items that need staff attention</div></div></div>
+        <div class="cb"><div class="action-list" id="actionRequiredList"></div></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">Reconciliation</div><div class="cs">Google Sheet, Firebase, QR, and public scan health</div></div></div>
+        <div class="cb"><div class="recon-grid" id="reconGrid"></div></div>
+      </div>
     </div>
   </div>
 </section>
@@ -1513,11 +1573,11 @@ tr.audit-fresh{animation:auditFresh 1.5s var(--ease);}
       <div class="si-wrap"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="aSearch" placeholder="Search ID, asset, serial no, invoice, vendor, remarks" oninput="filterA()"/></div>
     </div>
     <div class="filter-field custodian">
-      <div class="filter-label">Custodian</div>
+      <div class="filter-label">Custodian <span class="help-tip" title="Department responsible for custody and verification of the asset.">?</span></div>
       <select class="fsel" id="aCustodian" onchange="filterA()"><option value="">All Custodians</option><option>IT</option><option>BioMedical</option><option>Maintenance</option></select>
     </div>
     <div class="filter-field department">
-      <div class="filter-label">Department / Area</div>
+      <div class="filter-label">Department / Area <span class="help-tip" title="Filters by either department or physical location from the Google Sheet.">?</span></div>
       <select class="fsel" id="aDept" onchange="filterA()"><option value="">All Departments &amp; Areas</option></select>
     </div>
     <div class="filter-field condition">
@@ -1532,13 +1592,28 @@ tr.audit-fresh{animation:auditFresh 1.5s var(--ease);}
       <div class="filter-label">QR Status</div>
       <select class="fsel" id="aQr" onchange="filterA()"><option value="">All QR Status</option><option value="pending">Pending</option><option value="issued">Issued</option><option value="printed">Printed</option></select>
     </div>
+    <div class="filter-field" style="min-width:220px;">
+      <div class="filter-label">Saved View</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-out btn-sm" type="button" onclick="saveAssetView()">Save Filters</button>
+        <button class="btn btn-out btn-sm" type="button" onclick="resetAssetView()">Reset</button>
+      </div>
+    </div>
   </div>
   <div class="card">
     <div class="ch">
       <div><div class="ct">Asset List</div><div class="cs" id="aCnt">0 assets</div></div>
+      <div class="table-tools">
+        <span class="saved-chip" id="assetViewChip" style="display:none;">Saved view</span>
+        <button class="btn btn-out btn-sm" type="button" onclick="exportCurrentAssets()">Export CSV</button>
+        <div class="column-menu">
+          <button class="btn btn-out btn-sm" type="button" onclick="toggleAssetColumnMenu(event)">Columns</button>
+          <div class="column-pop" id="assetColumnMenu"></div>
+        </div>
+      </div>
     </div>
-    <div class="tw"><table class="asset-table">
-      <thead><tr><th>Asset ID</th><th>Description</th><th>Dept</th><th>Location</th><th>Custodian</th><th>Category</th><th>Vendor</th><th>Serial No.</th><th>Invoice</th><th>Invoice Date</th><th>Put to Use Date</th><th>Value (Rs.)</th><th>Remarks</th><th>State</th><th>QR Status</th><th>Actions</th></tr></thead>
+    <div class="tw sticky-head"><table class="asset-table">
+      <thead id="assetHead"></thead>
       <tbody id="tb-assets"></tbody>
     </table></div>
   </div>
@@ -2174,6 +2249,10 @@ const STATE = {
   scanConcerns: [],
   scanSettings: { visible_fields: ['description','department','category','put_to_use','location'], allow_public_reports: true },
   audit:       [],
+  sheetAssetsRaw: [],
+  assetDocsRaw: [],
+  qrDocsRaw: [],
+  scanDataRaw: [],
   loading:     true,
   error:       null,
   lastSyncedAt: 0,    // ms epoch of last successful refreshData
@@ -2186,6 +2265,8 @@ const SHEET_AUTO_REFRESH_MS = 60 * 1000;
 let sheetAutoRefreshTimer = null;
 let suppressNextNavPush = false;
 let LAST_AUDIT_ID = "";
+let ASSET_FILTERS_RESTORED = false;
+let CURRENT_ASSET_LIST = [];
 
 function parseTimeValue(value) {
   if (!value) return null;
@@ -2547,10 +2628,11 @@ async function refreshData() {
   try {
     const sheetAssets = await fetchAssets();
     setSyncProgress(32, "Loading asset register...");
-    const [assetDocs, qrDocs, scanSettings] = await Promise.all([
+    const [assetDocs, qrDocs, scanSettings, scanDataRaw] = await Promise.all([
       fetchCol("assets"),
       fetchCol("qr_codes"),
       fetchScanSettings(),
+      fetchScanDataDocs(),
     ]);
     setSyncProgress(62, "Loading lifecycle data...");
     const [reprints, disposal, maintenance, scanConcerns, audit] = await Promise.all([
@@ -2563,6 +2645,10 @@ async function refreshData() {
     setSyncProgress(88, "Merging records...");
     const assets = mergeAssets(sheetAssets, assetDocs, qrDocs);
     STATE.assets      = assets;
+    STATE.sheetAssetsRaw = sheetAssets;
+    STATE.assetDocsRaw = assetDocs;
+    STATE.qrDocsRaw   = qrDocs;
+    STATE.scanDataRaw = scanDataRaw;
     STATE.reprints    = reprints;
     STATE.disposal    = disposal;
     STATE.maintenance = maintenance;
@@ -2627,6 +2713,16 @@ async function fetchScanSettings() {
   }
 }
 
+async function fetchScanDataDocs() {
+  try {
+    const snap = await getDocs(query(collection(db, "scan_data"), limit(500)));
+    return snap.docs.map(d => ({ _id: d.id, asset_id: d.id, ...d.data() }));
+  } catch (e) {
+    console.warn('[fetchScanDataDocs]', e);
+    return [];
+  }
+}
+
 function setSyncStatus(text, kind) {
   const t = document.getElementById("syncStatusText"); if (!t) return;
   t.textContent = text;
@@ -2673,6 +2769,7 @@ function renderAllEmpty() {
 function renderAll() {
   loadDash();
   populateAssetFilters();
+  restoreAssetViewOnce();
   populateGalleryFilter();
   populatePrintFilters();
   if (typeof window.filterA === 'function') window.filterA();
@@ -2681,7 +2778,10 @@ function renderAll() {
   loadQrRegister();
   renderReprints(STATE.reprints);
   renderDisposal(STATE.disposal);
-  renderMaintenance([...STATE.scanConcerns, ...STATE.maintenance]);
+  renderMaintenance([
+    ...STATE.scanConcerns.filter(c => !['converted','converted_to_ticket'].includes(c.status || 'new')),
+    ...STATE.maintenance,
+  ]);
   renderAudit(STATE.audit);
   renderGallery();
   renderPrintCenter();
@@ -2759,6 +2859,65 @@ function loadDash() {
     <td class="td-sm" style="font-size:12px;">${a.invoice||''}</td>
     <td class="td-actions">${canQr() ? `<button class="btn btn-g btn-xs" onclick="openQrMo('${a.id}')">Generate</button>` : '<span style="font-size:11px;color:var(--s4);">Read-only</span>'}</td>
   </tr>`).join('');
+  renderActionRequired();
+  renderReconciliation();
+}
+
+function reconciliationSummary() {
+  const sheetIds = new Set((STATE.sheetAssetsRaw || []).map(a => a.id).filter(Boolean));
+  const fireIds = new Set((STATE.assetDocsRaw || []).map(a => a.asset_id).filter(Boolean));
+  const qrIds = new Set((STATE.qrDocsRaw || []).map(q => q.asset_id).filter(Boolean));
+  const scanIds = new Set((STATE.scanDataRaw || []).map(s => s.asset_id || s.assetId || s._id).filter(Boolean));
+  const sheetMissingFirebase = [...sheetIds].filter(id => !fireIds.has(id)).length;
+  const firebaseMissingSheet = [...fireIds].filter(id => !sheetIds.has(id)).length;
+  const issuedNoQrDoc = (STATE.assets || []).filter(a => a.id && a.qr !== 'pending' && !qrIds.has(a.id)).length;
+  const issuedNoScan = (STATE.assets || []).filter(a => a.id && a.qr !== 'pending' && !scanIds.has(a.id)).length;
+  return {
+    sheetMissingFirebase,
+    firebaseMissingSheet,
+    issuedNoQrDoc,
+    issuedNoScan,
+    totalIssues: sheetMissingFirebase + firebaseMissingSheet + issuedNoQrDoc + issuedNoScan,
+  };
+}
+
+function renderActionRequired() {
+  const box = document.getElementById('actionRequiredList'); if (!box) return;
+  const pendingAlloc = STATE.assets.filter(a => a.pending).length;
+  const pendingQr = STATE.assets.filter(a => a.id && !a.pending && a.qr === 'pending').length;
+  const openConcerns = STATE.scanConcerns.filter(c => !['converted','converted_to_ticket'].includes(c.status || 'new')).length;
+  const reprints = STATE.reprints.filter(r => r.status === 'Pending Approval').length;
+  const recon = reconciliationSummary().totalIssues;
+  const rows = [
+    ['Pending Asset IDs', 'Rows in Sheet that need generated IDs', pendingAlloc, 'assets'],
+    ['Pending QR Codes', 'Allocated assets waiting for QR creation', pendingQr, 'qr-pending'],
+    ['Public Scan Reports', 'Issues submitted from scan page', openConcerns, 'maintenance'],
+    ['Reprint Approvals', 'Damaged or missing labels awaiting approval', reprints, 'reprints'],
+    ['Reconciliation Checks', 'Sheet, Firebase, QR, or scan data mismatch', recon, 'reports'],
+  ];
+  box.innerHTML = rows.map(([title, copy, count, target]) => `
+    <button type="button" class="action-row" onclick="go('${target}')">
+      <div><strong>${title}</strong><span>${copy}</span></div>
+      <div class="action-num ${count ? 'metric-warn' : 'metric-ok'}">${count}</div>
+    </button>
+  `).join('');
+}
+
+function renderReconciliation() {
+  const box = document.getElementById('reconGrid'); if (!box) return;
+  const r = reconciliationSummary();
+  const items = [
+    ['Sheet missing Firebase', r.sheetMissingFirebase],
+    ['Firebase missing Sheet', r.firebaseMissingSheet],
+    ['Issued without QR doc', r.issuedNoQrDoc],
+    ['Issued without scan data', r.issuedNoScan],
+  ];
+  box.innerHTML = items.map(([label, count]) => `
+    <div class="recon-item ${count ? 'warn' : ''}">
+      <div class="recon-v">${count}</div>
+      <div class="recon-l">${label}</div>
+    </div>
+  `).join('');
 }
 
 function animCount(id, target) {
@@ -2773,65 +2932,181 @@ function animCount(id, target) {
 }
 
 //  ASSETS 
-function loadAssets() { renderA(STATE.assets); }
-function renderA(list) {
-  const tb = document.getElementById('tb-assets');
-  document.getElementById('aCnt').textContent = `${list.length} asset${list.length!==1?'s':''}`;
-  if (!list.length) {
-    const msg = STATE.error
-      ? `Could not load assets: ${STATE.error}`
-      : (STATE.loading ? 'Loading assets from Google Sheet' : 'No assets in the register. Add rows to the Invoice_Asset_Intake tab in Google Sheet, then Sync.');
-    tb.innerHTML = `<tr class="empty-row"><td colspan="16">${msg}</td></tr>`;
-    return;
-  }
-  tb.innerHTML = list.map(a => {
-    const displayId = a.id || `<span style="color:var(--s4);font-style:italic;">Pending  row ${a.sheet_row}</span>`;
-    return `<tr class="${e.audit_id && e.audit_id === LAST_AUDIT_ID ? 'audit-fresh' : ''}">
-    <td class="mono">${displayId}</td>
-    <td class="td-wide" style="font-weight:600;">${a.desc}</td>
-    <td class="td-sm"><span class="pill ${deptPill(a.dept)}">${a.dept||''}</span></td>
-    <td class="td-sm" style="font-size:12px;">${gsEscape(a.location||'')}</td>
-    <td class="td-sm" style="font-size:12px;font-weight:700;color:var(--s7);">${a.sheetCustodian || a.custodian || ''}</td>
-    <td class="td-sm" style="font-size:12px;">${a.cat||''}</td>
-    <td class="td-wide" style="font-size:12px;" title="${gsEscape(a.vendor||'')}">${gsEscape(a.vendor||'')}</td>
-    <td class="td-sm mono" style="font-size:11px;">${gsEscape(a.serial||'')}</td>
-    <td class="td-sm" style="font-size:12px;">${a.invoice||''}</td>
-    <td class="td-sm" style="font-size:12px;">${gsEscape(a.invDate||'')}</td>
-    <td class="td-sm" style="font-size:12px;">${a.itu||''}</td>
-    <td class="td-sm" style="font-size:12px;font-weight:600;">Rs.&nbsp;${a.value||''}</td>
-    <td class="td-wide" style="font-size:12px;color:var(--s6);" title="${gsEscape(a.remarks||'')}">${gsEscape(a.remarks||'')}</td>
-    <td class="td-sm"><span class="pill ${statePill(a.state)}">${stateLabel(a.state)}</span></td>
-    <td class="td-sm"><span class="pill ${qrPill(a.qr)}">${qrLabel(a.qr)}</span></td>
-    <td class="td-actions">
-      <div class="btn-group">
-        ${a.id ? `<button class="btn btn-out btn-xs" onclick="viewAssetProfile('${a.id}')">Profile</button>` : ''}
-        ${a.pending && canQr() ? `<button class="btn btn-am btn-xs" onclick="allocatePending(${a.sheet_row})">Allocate ID</button>` : ''}
-        ${!a.pending && canQr() && a.qr==='pending' ? `<button class="btn btn-g btn-xs" onclick="openQrMo('${a.id}')">QR</button>` : ''}
-        ${a.id && canQr() ? `<button class="btn btn-out btn-xs" onclick="viewAssetProfile('${a.id}')">Scan Visibility</button>` : ''}
-      </div>
-    </td>
-  </tr>`;
-  }).join('');
+const ASSET_VIEW_KEY = `far:assetView:${U.cid || DEFAULT_ENTITY_ID}`;
+const ASSET_COL_KEY = `far:assetColumns:${U.cid || DEFAULT_ENTITY_ID}`;
+const ASSET_COLUMNS = [
+  { key:'id', label:'Asset ID', required:true, cls:'mono', value:a=>a.id || `Pending row ${a.sheet_row || '?'}`, cell:a=>a.id ? gsEscape(a.id) : `<span style="color:var(--s4);font-style:italic;">Pending row ${a.sheet_row || '?'}</span>` },
+  { key:'desc', label:'Description', required:true, cls:'td-wide', value:a=>a.desc, cell:a=>`<span style="font-weight:700;">${gsEscape(a.desc || '')}</span>` },
+  { key:'dept', label:'Dept', default:true, cls:'td-sm', value:a=>a.dept, cell:a=>`<span class="pill ${deptPill(a.dept)}">${gsEscape(a.dept || '')}</span>` },
+  { key:'location', label:'Location', default:true, cls:'td-sm', value:a=>a.location, cell:a=>gsEscape(a.location || '') },
+  { key:'custodian', label:'Custodian', default:true, cls:'td-sm', value:a=>a.sheetCustodian || a.custodian, cell:a=>`<span style="font-weight:800;color:var(--s7);">${gsEscape(a.sheetCustodian || a.custodian || '')}</span>` },
+  { key:'cat', label:'Category', default:true, cls:'td-sm', value:a=>a.cat, cell:a=>gsEscape(a.cat || '') },
+  { key:'vendor', label:'Vendor', default:false, cls:'td-wide', value:a=>a.vendor, cell:a=>gsEscape(a.vendor || '') },
+  { key:'serial', label:'Serial No.', default:true, cls:'td-sm mono', value:a=>a.serial, cell:a=>gsEscape(a.serial || '') },
+  { key:'invoice', label:'Invoice', default:true, cls:'td-sm', value:a=>a.invoice, cell:a=>gsEscape(a.invoice || '') },
+  { key:'invDate', label:'Invoice Date', default:false, cls:'td-sm', value:a=>a.invDate, cell:a=>gsEscape(a.invDate || '') },
+  { key:'itu', label:'Put to Use Date', default:true, cls:'td-sm', value:a=>a.itu, cell:a=>gsEscape(a.itu || '') },
+  { key:'value', label:'Value (Rs.)', default:true, cls:'td-sm', value:a=>a.value, cell:a=>a.value ? `<b>Rs.&nbsp;${gsEscape(a.value)}</b>` : '' },
+  { key:'remarks', label:'Remarks', default:false, cls:'td-wide', value:a=>a.remarks, cell:a=>gsEscape(a.remarks || '') },
+  { key:'state', label:'State', default:true, cls:'td-sm', value:a=>stateLabel(a.state), cell:a=>`<span class="pill ${statePill(a.state)}">${stateLabel(a.state)}</span>` },
+  { key:'qr', label:'QR Status', default:true, cls:'td-sm', value:a=>qrLabel(a.qr), cell:a=>`<span class="pill ${qrPill(a.qr)}">${qrLabel(a.qr)}</span>` },
+  { key:'actions', label:'Actions', required:true, cls:'td-actions', value:()=>'', cell:a=>assetActions(a) },
+];
+
+function jsArg(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
-// Human labels for the enum values stored internally.
-function stateLabel(s){ return ({active_untagged:'Active - Untagged',active_tagged:'Active - Tagged',under_maintenance:'Under Maintenance',disposed:'Disposed',written_off:'Written Off',destroyed:'Destroyed',transferred_out:'Transferred Out',pending_allocation:'Pending Allocation',pending_review:'Pending Review'})[s] || s || ''; }
-function qrLabel(q)   { return ({pending:'Pending',issued:'Issued',printed:'Printed',reprint_requested:'Reprint Requested'})[q] || q || ''; }
-window.filterA = () => {
-  const q = document.getElementById('aSearch').value.toLowerCase();
-  const d = document.getElementById('aDept').value;
-  const c = document.getElementById('aCustodian').value;
-  const k = document.getElementById('aCondition').value;
-  const s = document.getElementById('aState').value;
-  const r = document.getElementById('aQr').value;
-  renderA(STATE.assets.filter(a =>
+function assetActions(a) {
+  const id = jsArg(a.id);
+  return `<div class="btn-group">
+    ${a.id ? `<button class="btn btn-out btn-xs" onclick="viewAssetProfile('${id}')">Profile</button>` : ''}
+    ${a.pending && canQr() ? `<button class="btn btn-am btn-xs" onclick="allocatePending(${Number(a.sheet_row) || 0})">Allocate ID</button>` : ''}
+    ${!a.pending && canQr() && a.qr==='pending' ? `<button class="btn btn-g btn-xs" onclick="openQrMo('${id}')">QR</button>` : ''}
+    ${a.id && canQr() ? `<button class="btn btn-out btn-xs" onclick="viewAssetProfile('${id}')">Scan Visibility</button>` : ''}
+  </div>`;
+}
+
+function selectedAssetColumnKeys() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ASSET_COL_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length) return new Set(saved);
+  } catch {}
+  return new Set(ASSET_COLUMNS.filter(c => c.required || c.default !== false).map(c => c.key));
+}
+
+function visibleAssetColumns() {
+  const keys = selectedAssetColumnKeys();
+  return ASSET_COLUMNS.filter(c => c.required || keys.has(c.key));
+}
+
+function renderAssetColumnMenu() {
+  const menu = document.getElementById('assetColumnMenu'); if (!menu) return;
+  const keys = selectedAssetColumnKeys();
+  menu.innerHTML = ASSET_COLUMNS.filter(c => !c.required).map(c => `
+    <label><input type="checkbox" value="${c.key}" ${keys.has(c.key) ? 'checked' : ''} onchange="setAssetColumn('${c.key}', this.checked)"> ${c.label}</label>
+  `).join('');
+}
+
+window.toggleAssetColumnMenu = (event) => {
+  event?.stopPropagation?.();
+  renderAssetColumnMenu();
+  document.getElementById('assetColumnMenu')?.classList.toggle('on');
+};
+window.setAssetColumn = (key, enabled) => {
+  const keys = selectedAssetColumnKeys();
+  if (enabled) keys.add(key); else keys.delete(key);
+  localStorage.setItem(ASSET_COL_KEY, JSON.stringify([...keys]));
+  renderA(getFilteredAssets());
+};
+document.addEventListener('click', e => {
+  if (!e.target.closest?.('.column-menu')) document.getElementById('assetColumnMenu')?.classList.remove('on');
+});
+
+function renderAssetHeader(cols) {
+  const head = document.getElementById('assetHead'); if (!head) return;
+  head.innerHTML = `<tr>${cols.map(c => `<th>${c.label}</th>`).join('')}</tr>`;
+}
+
+function assetTd(col, a) {
+  return `<td data-label="${gsEscape(col.label)}" class="${col.cls || ''}">${col.cell(a)}</td>`;
+}
+
+function getFilteredAssets() {
+  const q = (document.getElementById('aSearch')?.value || '').toLowerCase();
+  const d = document.getElementById('aDept')?.value || '';
+  const c = document.getElementById('aCustodian')?.value || '';
+  const k = document.getElementById('aCondition')?.value || '';
+  const s = document.getElementById('aState')?.value || '';
+  const r = document.getElementById('aQr')?.value || '';
+  return STATE.assets.filter(a =>
     (!q || [a.id,a.desc,a.invoice,a.invDate,a.serial,a.model,a.vendor,a.remarks,a.dept,a.location,a.sheetCustodian,a.custodian].join(' ').toLowerCase().includes(q)) &&
     (!d || a.dept === d || a.location === d) &&
     (!c || a.sheetCustodian === c || a.custodian === c) &&
     (!k || a.condition === k) &&
     (!s || a.state === s) &&
     (!r || a.qr === r)
-  ));
+  );
+}
+
+function loadAssets() { renderA(getFilteredAssets()); }
+function renderA(list) {
+  const tb = document.getElementById('tb-assets'); if (!tb) return;
+  const cols = visibleAssetColumns();
+  CURRENT_ASSET_LIST = list || [];
+  renderAssetHeader(cols);
+  renderAssetColumnMenu();
+  const cnt = document.getElementById('aCnt');
+  if (cnt) cnt.textContent = `${CURRENT_ASSET_LIST.length} asset${CURRENT_ASSET_LIST.length!==1?'s':''}`;
+  if (!CURRENT_ASSET_LIST.length) {
+    const msg = STATE.error
+      ? `Could not load assets: ${STATE.error}`
+      : (STATE.loading ? 'Loading assets from Google Sheet' : 'No assets in the register. Add rows to the Invoice_Asset_Intake tab in Google Sheet, then Sync.');
+    tb.innerHTML = `<tr class="empty-row"><td colspan="${cols.length}">${msg}</td></tr>`;
+    return;
+  }
+  tb.innerHTML = CURRENT_ASSET_LIST.map(a => `<tr>${cols.map(c => assetTd(c, a)).join('')}</tr>`).join('');
+}
+
+function restoreAssetViewOnce() {
+  if (ASSET_FILTERS_RESTORED) { updateAssetViewChip(); return; }
+  ASSET_FILTERS_RESTORED = true;
+  try {
+    const saved = JSON.parse(localStorage.getItem(ASSET_VIEW_KEY) || 'null');
+    if (!saved) return;
+    [['aSearch','q'],['aDept','d'],['aCustodian','c'],['aCondition','k'],['aState','s'],['aQr','r']].forEach(([id,key]) => {
+      const el = document.getElementById(id);
+      if (el && saved[key] !== undefined) el.value = saved[key];
+    });
+  } catch {}
+  updateAssetViewChip();
+}
+
+function updateAssetViewChip() {
+  const chip = document.getElementById('assetViewChip'); if (!chip) return;
+  chip.style.display = localStorage.getItem(ASSET_VIEW_KEY) ? 'inline-flex' : 'none';
+}
+
+window.saveAssetView = () => {
+  const saved = {
+    q: document.getElementById('aSearch')?.value || '',
+    d: document.getElementById('aDept')?.value || '',
+    c: document.getElementById('aCustodian')?.value || '',
+    k: document.getElementById('aCondition')?.value || '',
+    s: document.getElementById('aState')?.value || '',
+    r: document.getElementById('aQr')?.value || '',
+  };
+  localStorage.setItem(ASSET_VIEW_KEY, JSON.stringify(saved));
+  updateAssetViewChip();
+  toast('Asset view saved on this browser', 'ok');
+};
+
+window.resetAssetView = () => {
+  localStorage.removeItem(ASSET_VIEW_KEY);
+  ['aSearch','aDept','aCustodian','aCondition','aState','aQr'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  updateAssetViewChip();
+  renderA(STATE.assets);
+};
+
+window.exportCurrentAssets = () => {
+  const cols = visibleAssetColumns().filter(c => c.key !== 'actions');
+  const rows = [cols.map(c => c.label)];
+  (CURRENT_ASSET_LIST.length ? CURRENT_ASSET_LIST : getFilteredAssets()).forEach(a => rows.push(cols.map(c => c.value(a) || '')));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `FAR_Assets_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  toast('Asset list exported as CSV', 'ok');
+};
+
+// Human labels for the enum values stored internally.
+function stateLabel(s){ return ({active_untagged:'Active - Untagged',active_tagged:'Active - Tagged',under_maintenance:'Under Maintenance',disposed:'Disposed',written_off:'Written Off',destroyed:'Destroyed',transferred_out:'Transferred Out',pending_allocation:'Pending Allocation',pending_review:'Pending Review'})[s] || s || ''; }
+function qrLabel(q)   { return ({pending:'Pending',issued:'Issued',printed:'Printed',reprint_requested:'Reprint Requested'})[q] || q || ''; }
+window.filterA = () => {
+  renderA(getFilteredAssets());
 };
 
 // Full profile page  renders into #s-asset-profile then navigates there
@@ -3712,7 +3987,7 @@ function renderAudit(list) {
   tb.innerHTML = list.map((e,i) => {
     const cls = (e.action||'').includes('QR')?'qr':(e.action||'').includes('Dispos')?'dispose':(e.action||'').includes('Reprint')?'reprint':(e.action||'').includes('Sync')?'sync':'';
     const ts  = formatDateTime(e.timestamp);
-    return `<tr>
+    return `<tr class="${e.audit_id && e.audit_id === LAST_AUDIT_ID ? 'audit-fresh' : ''}">
       <td style="font-size:11px;color:var(--s4);">${list.length-i}</td>
       <td style="font-size:11px;white-space:nowrap;color:var(--s6);">${ts}</td>
       <td style="font-size:12px;">${e.user_email || ''}</td>
@@ -3730,14 +4005,13 @@ function populateAuditUserFilter() {
   const cur = sel.value;
   sel.innerHTML = '<option value="">All Users</option>' + users.map(u => `<option value="${gsEscape(u)}"${u===cur?' selected':''}>${gsEscape(u)}</option>`).join('');
 }
-window.filterAudit = () => {
-  populateAuditUserFilter();
-  const q = document.getElementById('auSearch').value.toLowerCase();
-  const f = document.getElementById('auFilter').value;
+function getFilteredAuditList() {
+  const q = (document.getElementById('auSearch')?.value || '').toLowerCase();
+  const f = document.getElementById('auFilter')?.value || '';
   const r = document.getElementById('auRange')?.value || '';
   const u = document.getElementById('auUser')?.value || '';
   const cutoff = r ? Date.now() - Number(r) * 86_400_000 : 0;
-  renderAudit(STATE.audit.filter(e => {
+  return STATE.audit.filter(e => {
     if (q && ![e.user_email,e.asset_id,e.action,e.notes].join(' ').toLowerCase().includes(q)) return false;
     if (f && e.action !== f) return false;
     if (u && e.user_email !== u) return false;
@@ -3746,13 +4020,18 @@ window.filterAudit = () => {
       if (!ts || ts < cutoff) return false;
     }
     return true;
-  }));
+  });
+}
+window.filterAudit = () => {
+  populateAuditUserFilter();
+  renderAudit(getFilteredAuditList());
 };
 window.exportAudit = () => {
   const rows = [['#','Timestamp','User','Role','Action','Asset ID','Details']];
-  STATE.audit.forEach((e,i) => {
+  const list = getFilteredAuditList();
+  list.forEach((e,i) => {
     const ts = e.timestamp?.seconds ? new Date(e.timestamp.seconds*1000).toISOString() : '';
-    rows.push([STATE.audit.length-i, ts, e.user_email||'', e.user_role||'', e.action||'', e.asset_id||'', e.notes||'']);
+    rows.push([list.length-i, ts, e.user_email||'', e.user_role||'', e.action||'', e.asset_id||'', e.notes||'']);
   });
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
@@ -4006,15 +4285,16 @@ function renderMaintenance(list) {
   tb.innerHTML = list.map(t => {
     if (t.source === "public_scan") {
       const on = formatDateOnly(t.reported_at);
+      const cat = String(t.category || 'public_scan').replace(/_/g, ' ');
       return `<tr>
         <td class="mono" style="font-size:11px;">${t._id.slice(0,8)}</td>
-        <td class="mono">${t.asset_id||''}</td>
+        <td class="mono">${gsEscape(t.asset_id||'')}</td>
         <td class="td-wide" style="font-size:12px;font-weight:600;">Public scan report</td>
-        <td class="td-wide" style="font-size:12px;">${t.message||''}</td>
-        <td class="td-sm" style="font-size:12px;">${t.contact||'Public scanner'}</td>
+        <td class="td-wide" style="font-size:12px;">${gsEscape(t.message||'')}</td>
+        <td class="td-sm" style="font-size:12px;">${gsEscape(t.contact||'Public scanner')}</td>
         <td class="td-sm" style="font-size:12px;">${on}</td>
-        <td class="td-sm"><span class="pill pill-am">Public</span></td>
-        <td class="td-sm"><span class="pill pill-am">${t.status || 'new'}</span></td>
+        <td class="td-sm"><span class="pill pill-am">${gsEscape(cat)}</span></td>
+        <td class="td-sm"><span class="pill pill-am">${gsEscape(t.status || 'new')}</span></td>
         <td class="td-sm" style="font-size:12px;">Admin review</td>
         <td class="td-actions"><div class="btn-group">
           <button class="btn btn-g btn-xs" onclick="convertConcernToMaint('${t._id}')">Create Ticket</button>
@@ -4084,7 +4364,7 @@ window.convertConcernToMaint = async (id) => {
       asset_id: concern.asset_id || "",
       asset_desc: asset?.desc || "",
       issue: concern.message || "Public scan report",
-      details: `Reported from public scan page. Contact: ${concern.contact || "not provided"}`,
+      details: `Reported from public scan page. Category: ${String(concern.category || "other").replace(/_/g, " ")}. Contact: ${concern.contact || "not provided"}`,
       priority: "Normal",
       reported_by: concern.contact || "Public scanner",
       reported_on: serverTimestamp(),
@@ -4736,6 +5016,29 @@ window.exportReport = function exportReport(kind) {
 
 //  NAVIGATION
 const SEC_MAP = { dashboard:'s-dashboard', assets:'s-assets', sync:'s-sync', 'qr-pending':'s-qr-pending', 'qr-register':'s-qr-register', 'qr-gallery':'s-qr-gallery', 'print-center':'s-print-center', 'scan-settings':'s-scan-settings', reprints:'s-reprints', disposal:'s-disposal', maintenance:'s-maintenance', reports:'s-reports', audit:'s-audit', 'asset-profile':'s-asset-profile' };
+const SECTION_TIPS = {
+  assets: 'Use filters and Columns to create a compact working view. Save Filters keeps your preferred register view on this browser.',
+  sync: 'Sync reads the Google Sheet first, then merges Firebase workflow records. Public scan data is refreshed from Firebase in the same pass.',
+  'qr-pending': 'Generate QR only after the Asset ID is allocated. Bulk actions are guarded so repeated clicks do not create duplicate IDs.',
+  'print-center': 'Select label size before printing. The preview loads QR cards progressively so large batches do not feel frozen.',
+  'scan-settings': 'These toggles control what the public sees after scanning a QR. Changes are written to Firestore and apply live.',
+  audit: 'Audit export respects the filters currently selected here, so you can send a focused CSV instead of the full history.',
+};
+function renderSectionTip(key) {
+  document.querySelectorAll('.section-tip').forEach(el => el.remove());
+  const text = SECTION_TIPS[key];
+  if (!text || localStorage.getItem(`far:sectionTip:${key}`)) return;
+  const sec = document.getElementById(SEC_MAP[key]); if (!sec) return;
+  const tip = document.createElement('div');
+  tip.className = 'section-tip';
+  tip.innerHTML = `<div>${text}</div><button type="button" onclick="dismissSectionTip('${key}')">Got it</button>`;
+  const anchor = sec.querySelector('.ph') || sec.firstElementChild;
+  anchor?.insertAdjacentElement('afterend', tip);
+}
+window.dismissSectionTip = (key) => {
+  localStorage.setItem(`far:sectionTip:${key}`, String(Date.now()));
+  document.querySelectorAll('.section-tip').forEach(el => el.remove());
+};
 window.go = (key) => {
   if (!SEC_MAP[key]) key = 'dashboard';
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
@@ -4752,6 +5055,7 @@ window.go = (key) => {
   if (key === 'audit') { populateAuditUserFilter(); renderAudit(STATE.audit); }
   if (key === 'scan-settings') renderScanSettings();
   if (key === 'reports') window.renderReports?.();
+  renderSectionTip(key);
   if (!suppressNextNavPush) {
     history.pushState({ FARSection:key }, '', `${location.pathname}${location.search}#${key}`);
   }

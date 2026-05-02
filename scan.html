@@ -283,6 +283,7 @@ body{
   border-radius:18px;padding:16px;box-shadow:var(--sh-md);animation:cardIn .35s var(--ease);
 }
 .report-panel.open{display:block;}
+.report-panel.submitted{animation:cardIn .35s var(--ease), verifiedPulse 1.1s var(--ease);}
 .report-title{font-size:13px;font-weight:800;color:var(--s-900);margin-bottom:4px;}
 .report-help{font-size:12px;color:var(--s-500);line-height:1.5;margin-bottom:12px;}
 .report-field{width:100%;border:1.5px solid var(--s-200);border-radius:12px;padding:11px 12px;font:600 13px 'Inter',sans-serif;color:var(--s-800);outline:none;background:#fff;transition:.2s var(--ease);}
@@ -339,6 +340,14 @@ textarea.report-field{min-height:92px;resize:vertical;line-height:1.5;}
   <div class="report-panel" id="reportPanel">
     <div class="report-title">Report Asset Concern</div>
     <div class="report-help">Use this for damaged QR labels, wrong location, missing asset, or equipment condition issues.</div>
+    <select class="report-field" id="concernCategory">
+      <option value="condition_issue">Equipment condition issue</option>
+      <option value="wrong_location">Wrong location shown</option>
+      <option value="damaged_qr">Damaged or unreadable QR label</option>
+      <option value="asset_missing">Asset not found at location</option>
+      <option value="other">Other concern</option>
+    </select>
+    <div style="height:9px;"></div>
     <textarea class="report-field" id="concernMsg" maxlength="600" placeholder="Describe the concern clearly"></textarea>
     <div style="height:9px;"></div>
     <input class="report-field" id="concernContact" maxlength="120" placeholder="Optional: name / phone / department"/>
@@ -585,6 +594,7 @@ window.reportConcern = async () => {
   if (reportInFlight) return;
   const msg = document.getElementById('concernMsg').value.trim();
   const contact = document.getElementById('concernContact').value.trim();
+  const category = document.getElementById('concernCategory')?.value || 'other';
   if (msg.length < 5) {
     setConcernStatus('Please describe the concern in at least 5 characters.', 'err');
     return;
@@ -602,6 +612,7 @@ window.reportConcern = async () => {
     setConcernStatus('Submitting report...', '');
     await addDoc(collection(db, 'scan_concerns'), {
       asset_id:    assetId,
+      category:    category,
       message:     msg,
       contact:     contact,
       reported_at: serverTimestamp(),
@@ -612,6 +623,8 @@ window.reportConcern = async () => {
     localStorage.setItem(throttleKey, String(Date.now()));
     document.getElementById('concernMsg').value = '';
     document.getElementById('concernContact').value = '';
+    document.getElementById('reportPanel')?.classList.add('submitted');
+    setTimeout(() => document.getElementById('reportPanel')?.classList.remove('submitted'), 1200);
     setConcernStatus('Report logged. Hospital administration will review it.', 'ok');
   } catch (e) {
     setConcernStatus('Could not submit right now: ' + (e.message||e), 'err');
